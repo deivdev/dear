@@ -9,6 +9,14 @@ import kotlinx.coroutines.withContext
 
 class LlamaModel private constructor(private val contextPtr: Long) {
 
+    @Volatile var lastTokensPerSec: Double = 0.0
+        private set
+    @Volatile var lastTokenCount: Int = 0
+        private set
+    @Volatile var lastDurationMs: Long = 0
+        private set
+
+
     companion object {
         private const val TAG = "LlamaModel"
         private var libraryLoaded = false
@@ -41,7 +49,13 @@ class LlamaModel private constructor(private val contextPtr: Long) {
     }
 
     fun generate(prompt: String, maxTokens: Int = 512): Flow<String> = flow {
+        val start = System.nanoTime()
         val tokens = nativeGenerate(contextPtr, prompt, maxTokens)
+        val elapsedNs = System.nanoTime() - start
+        val ms = elapsedNs / 1_000_000
+        lastTokenCount = tokens.size
+        lastDurationMs = ms
+        lastTokensPerSec = if (ms > 0) tokens.size * 1000.0 / ms else 0.0
         for (token in tokens) {
             emit(token)
         }

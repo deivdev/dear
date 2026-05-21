@@ -1,8 +1,8 @@
 package dev.deiv.dear.llm
 
-import dev.deiv.dear.data.model.DiaryEntry
+import dev.deiv.dear.data.model.Entry
 import dev.deiv.dear.data.model.EntryType
-import dev.deiv.dear.data.repository.DiaryRepository
+import dev.deiv.dear.data.repository.EntryRepository
 import kotlinx.coroutines.flow.Flow
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -10,13 +10,13 @@ import java.util.Locale
 
 class DiaryAssistant(
     private val model: LlamaModel?,
-    private val repository: DiaryRepository,
+    private val repository: EntryRepository,
 ) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
     suspend fun ask(question: String): Flow<String> {
-        val recentEntries = repository.getRecentEntries(30)
-        val context = buildContext(recentEntries)
+        val recent = repository.getRecent(30)
+        val context = buildContext(recent)
         val prompt = buildPrompt(context, question)
 
         return model?.generate(prompt)
@@ -25,31 +25,26 @@ class DiaryAssistant(
             }
     }
 
-    private fun buildContext(entries: List<DiaryEntry>): String {
-        return entries.joinToString("\n") { entry ->
-            val time = dateFormat.format(Date(entry.timestamp))
-            when (entry.type) {
-                EntryType.NOTE -> "[$time] Note: ${entry.text}"
-                EntryType.PHOTO -> "[$time] Photo taken${entry.text?.let { ": $it" } ?: ""}" +
-                    locationSuffix(entry)
-                EntryType.VIDEO -> "[$time] Video recorded${entry.text?.let { ": $it" } ?: ""}" +
-                    locationSuffix(entry)
-                EntryType.LOCATION -> "[$time] Location: ${entry.address ?: "${entry.latitude}, ${entry.longitude}"}"
+    private fun buildContext(items: List<Entry>): String {
+        return items.joinToString("\n") { item ->
+            val time = dateFormat.format(Date(item.createdAt))
+            val source = item.sourceApp?.let { " from $it" } ?: ""
+            when (item.type) {
+                EntryType.TEXT -> "[$time] Note$source: ${item.textContent}"
+                EntryType.LINK -> "[$time] Link$source: ${item.textContent}"
+                EntryType.IMAGE -> "[$time] Image$source${item.originalName?.let { " ($it)" } ?: ""}"
+                EntryType.VIDEO -> "[$time] Video$source${item.originalName?.let { " ($it)" } ?: ""}"
+                EntryType.AUDIO -> "[$time] Audio$source${item.originalName?.let { " ($it)" } ?: ""}"
+                EntryType.FILE -> "[$time] File$source${item.originalName?.let { " ($it)" } ?: ""}"
             }
         }
     }
 
-    private fun locationSuffix(entry: DiaryEntry): String {
-        if (entry.latitude == null) return ""
-        return " at ${entry.address ?: "${entry.latitude}, ${entry.longitude}"}"
-    }
-
     private fun buildPrompt(context: String, question: String): String {
-        // Phi-4-mini uses ChatML format
         return """<|system|>
-You are Dear, a personal diary AI assistant. You help the user remember and reflect on their experiences based on their diary entries. Be warm, concise, and helpful.
+You are Dear, a personal diary AI assistant. You help the user remember and reflect on their experiences based on their captured entries. Be warm, concise, and helpful.
 
-Here are the user's recent diary entries:
+Here are the user's recent entries:
 $context<|end|>
 <|user|>
 $question<|end|>

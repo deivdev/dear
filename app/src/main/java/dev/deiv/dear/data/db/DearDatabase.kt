@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import dev.deiv.dear.data.model.DiaryEntry
+import dev.deiv.dear.data.model.Entry
 
-@Database(entities = [DiaryEntry::class], version = 1, exportSchema = false)
+@Database(
+    entities = [Entry::class],
+    version = 4,
+    exportSchema = false,
+)
 abstract class DearDatabase : RoomDatabase() {
-    abstract fun diaryDao(): DiaryDao
+    abstract fun entryDao(): EntryDao
 
     companion object {
         @Volatile
@@ -20,7 +24,10 @@ abstract class DearDatabase : RoomDatabase() {
                     context.applicationContext,
                     DearDatabase::class.java,
                     "dear.db"
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }

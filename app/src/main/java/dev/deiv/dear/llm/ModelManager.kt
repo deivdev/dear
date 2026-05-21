@@ -20,6 +20,8 @@ class ModelManager(private val context: Context) {
     val state: StateFlow<ModelState> = _state.asStateFlow()
 
     private var model: LlamaModel? = null
+    @Volatile var currentModelFile: File? = null
+        private set
 
     val modelDir: File
         get() = File(context.filesDir, "models").also { it.mkdirs() }
@@ -40,6 +42,7 @@ class ModelManager(private val context: Context) {
                 _state.value = ModelState.LOADING
                 val loaded = LlamaModel.load(modelFile.absolutePath)
                 model = loaded
+                currentModelFile = modelFile
                 _state.value = ModelState.READY
                 loaded
             } catch (e: Exception) {
@@ -81,8 +84,20 @@ class ModelManager(private val context: Context) {
     fun release() {
         model?.close()
         model = null
+        currentModelFile = null
         _state.value = ModelState.NOT_FOUND
     }
+
+    suspend fun deleteCurrentModel(): Boolean = withContext(Dispatchers.IO) {
+        val file = currentModelFile ?: return@withContext false
+        release()
+        runCatching { file.delete() }.getOrDefault(false)
+    }
+
+    fun listInstalled(): List<File> = modelDir.listFiles()
+        ?.filter { it.extension == "gguf" }
+        ?.sortedByDescending { it.lastModified() }
+        ?: emptyList()
 
     companion object {
         private const val TAG = "ModelManager"

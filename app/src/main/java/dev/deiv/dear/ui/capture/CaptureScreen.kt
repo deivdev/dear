@@ -1,6 +1,5 @@
 package dev.deiv.dear.ui.capture
 
-import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,9 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import dev.deiv.dear.data.db.DearDatabase
-import dev.deiv.dear.data.model.DiaryEntry
-import dev.deiv.dear.data.model.EntryType
+import dev.deiv.dear.DearApp
 import kotlinx.coroutines.launch
 
 @Composable
@@ -56,13 +53,8 @@ fun CaptureScreen() {
         Button(
             onClick = {
                 scope.launch {
-                    val dao = DearDatabase.getInstance(context.applicationContext as Application).diaryDao()
-                    dao.insert(
-                        DiaryEntry(
-                            type = EntryType.NOTE,
-                            text = noteText.trim(),
-                        )
-                    )
+                    val repo = (context.applicationContext as DearApp).entryRepository
+                    repo.addText(noteText.trim())
                     noteText = ""
                     saved = true
                 }

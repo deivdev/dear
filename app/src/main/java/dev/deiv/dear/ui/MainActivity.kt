@@ -1,7 +1,6 @@
 package dev.deiv.dear.ui
 
 import android.Manifest
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,7 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,9 +24,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import dev.deiv.dear.service.LocationService
 import dev.deiv.dear.ui.capture.CaptureScreen
 import dev.deiv.dear.ui.chat.ChatScreen
+import dev.deiv.dear.ui.jobs.JobsScreen
+import dev.deiv.dear.ui.settings.SettingsScreen
 import dev.deiv.dear.ui.theme.DearTheme
 import dev.deiv.dear.ui.timeline.TimelineScreen
 
@@ -33,11 +35,7 @@ class MainActivity : ComponentActivity() {
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
-            startLocationService()
-        }
-    }
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,8 +66,20 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 selected = currentRoute == "chat",
                                 onClick = { navController.navigate("chat") { launchSingleTop = true } },
-                                icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
+                                icon = { Icon(Icons.Default.Email, contentDescription = null) },
                                 label = { Text("Chat") },
+                            )
+                            NavigationBarItem(
+                                selected = currentRoute == "jobs",
+                                onClick = { navController.navigate("jobs") { launchSingleTop = true } },
+                                icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                label = { Text("Jobs") },
+                            )
+                            NavigationBarItem(
+                                selected = currentRoute == "settings",
+                                onClick = { navController.navigate("settings") { launchSingleTop = true } },
+                                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                label = { Text("Settings") },
                             )
                         }
                     }
@@ -81,7 +91,13 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable("timeline") { TimelineScreen() }
                         composable("capture") { CaptureScreen() }
-                        composable("chat") { ChatScreen() }
+                        composable("chat") {
+                            ChatScreen(onOpenSettings = {
+                                navController.navigate("settings") { launchSingleTop = true }
+                            })
+                        }
+                        composable("jobs") { JobsScreen() }
+                        composable("settings") { SettingsScreen() }
                     }
                 }
             }
@@ -90,18 +106,11 @@ class MainActivity : ComponentActivity() {
 
     private fun requestPermissions() {
         val permissions = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.CAMERA,
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         permissionLauncher.launch(permissions.toTypedArray())
-    }
-
-    private fun startLocationService() {
-        val intent = Intent(this, LocationService::class.java)
-        startForegroundService(intent)
     }
 }

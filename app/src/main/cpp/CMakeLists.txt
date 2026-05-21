@@ -24,6 +24,7 @@ if(DEFINED ANDROID_ABI)
 endif()
 
 set(LLAMA_SRC ${CMAKE_CURRENT_LIST_DIR}/llama.cpp)
+set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
 add_subdirectory(${LLAMA_SRC} build-llama)
 
 # --- JNI bridge library ---
