@@ -50,9 +50,10 @@ interface EntryDao {
 
     // --- Catalog lifecycle ---
 
+    /** In the order they were saved, a post's photos right after their link. */
     @Query(
         "SELECT id FROM entries WHERE status = 'PENDING' " +
-            "OR (status = 'FAILED' AND attempts < :maxAttempts) ORDER BY createdAt"
+            "OR (status = 'FAILED' AND attempts < :maxAttempts) ORDER BY COALESCE(parentId, id), id"
     )
     suspend fun getCatalogable(maxAttempts: Int): List<Long>
 

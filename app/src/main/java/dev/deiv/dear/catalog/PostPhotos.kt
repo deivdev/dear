@@ -38,8 +38,7 @@ class PostPhotos(
                 val photo = InstagramMedia.download(url, dir)
                 photos += Entry(
                     type = EntryType.IMAGE,
-                    // Newest first in the collection: right below the link, in the post's order.
-                    createdAt = link.createdAt - (i + 1),
+                    createdAt = link.createdAt,
                     filePath = photo.file.absolutePath,
                     mimeType = photo.mimeType,
                     sizeBytes = photo.file.length(),

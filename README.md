@@ -24,8 +24,10 @@ The model runs on the phone; nothing goes to a cloud.
     the carousel are pulled in and kept with the link, each one cataloged on its own, and the
     post's summary is written from what they show.
 
-  Cataloging runs in WorkManager and saves progress after every frame or audio chunk, so a run
-  Android stops half-way resumes instead of starting over.
+  Cataloging runs in WorkManager, as a foreground service with a silent notification when it
+  starts while you are using the phone (e.g. right after sharing), so Android gives it every core
+  and doesn't cut it short. It saves progress after every frame or audio chunk, so a run Android
+  stops half-way resumes instead of starting over.
 - **Collection** — everything by day, with search over titles, summaries, tags and transcribed
   text, and filters by type.
 - **Ask** — chat with your collection ("what was that link about slow living?", "what did I save

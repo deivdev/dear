@@ -50,6 +50,7 @@ class DearApp : Application(), SingletonImageLoader.Factory {
         entryRepository = EntryRepository(this, dao, requestCatalog = catalogProcessor::schedule)
         chatRepository = ChatRepository(db.chatDao())
         CatalogWorker.createNotificationChannel(this)
+        catalogProcessor.scheduleWatchdog()
 
         // The model is loaded on demand by whoever needs it, not at every process start. A run is
         // requested at startup (leftovers) and whenever a model gets installed.
@@ -58,7 +59,7 @@ class DearApp : Application(), SingletonImageLoader.Factory {
                 .map { it != ModelState.NOT_INSTALLED }
                 .distinctUntilChanged()
                 .filter { it }
-                .collect { catalogProcessor.schedule() }
+                .collect { catalogProcessor.ensureScheduled() }
         }
     }
 

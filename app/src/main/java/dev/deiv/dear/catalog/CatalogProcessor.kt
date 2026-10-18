@@ -2,9 +2,11 @@ package dev.deiv.dear.catalog
 
 import android.content.Context
 import android.util.Log
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.deiv.dear.data.db.EntryDao
 import dev.deiv.dear.data.model.CatalogStatus
@@ -20,7 +22,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 
 enum class JobStatus { SUCCESS, FAILED, SKIPPED }
 
@@ -65,12 +69,26 @@ class CatalogProcessor(
      * Requests a catalog run. Cheap and safe to call often: a run already in progress keeps going
      * and this one is appended behind it, so nothing inserted meanwhile is missed.
      */
-    fun schedule() {
+    fun schedule() = enqueue(ExistingWorkPolicy.APPEND_OR_REPLACE)
+
+    /** Requests a run unless one is going or waiting already. */
+    fun ensureScheduled() = enqueue(ExistingWorkPolicy.KEEP)
+
+    /** Checks the queue every so often, so that a run Android dropped does not wait for the app. */
+    fun scheduleWatchdog() {
+        val request = PeriodicWorkRequestBuilder<CatalogWatchdogWorker>(WATCHDOG_MINUTES, TimeUnit.MINUTES).build()
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork(WATCHDOG_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    /** Anything to catalog, including entries a killed run left half-done. */
+    suspend fun hasPending(): Boolean = pendingCount.first() > 0
+
+    private fun enqueue(policy: ExistingWorkPolicy) {
         val request = OneTimeWorkRequestBuilder<CatalogWorker>()
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
-        WorkManager.getInstance(context)
-            .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, policy, request)
     }
 
     /** Catalogs until nothing is left. Only [CatalogWorker] calls this, one run at a time. */
@@ -181,6 +199,8 @@ class CatalogProcessor(
     companion object {
         private const val TAG = "CatalogProcessor"
         private const val WORK_NAME = "catalog"
+        private const val WATCHDOG_NAME = "catalog-watchdog"
+        private const val WATCHDOG_MINUTES = 30L
         private const val MAX_HISTORY = 50
         const val MAX_ATTEMPTS = 3
     }
