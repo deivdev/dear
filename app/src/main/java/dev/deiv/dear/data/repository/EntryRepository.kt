@@ -60,7 +60,8 @@ class EntryRepository(
                     .take(limit)
                     .map { it.first }
             }
-            (matches + all.take(latest)).distinctBy { it.entry.id }
+            // The latest things saved, not the photos pulled in with a post.
+            (matches + all.filter { it.entry.parentId == null }.take(latest)).distinctBy { it.entry.id }
         }
 
     private fun relevance(item: EntryWithTags, terms: List<String>): Int {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.deiv.dear.R
+import dev.deiv.dear.data.model.Entry
 import dev.deiv.dear.data.model.EntryType
 import dev.deiv.dear.data.model.EntryWithTags
 import dev.deiv.dear.ui.common.CatalogStatusLabel
@@ -116,7 +118,11 @@ fun CollectionScreen(
                 else -> state.items.groupBy { localDate(it.entry.createdAt) }.forEach { (day, entries) ->
                     item(key = "day-$day") { DayHeader(formatDay(context, day)) }
                     items(entries, key = { it.entry.id }) { item ->
-                        EntryCard(item, onClick = { onOpenEntry(item.entry.id) })
+                        EntryCard(
+                            item = item,
+                            photos = state.photos[item.entry.id].orEmpty(),
+                            onClick = { onOpenEntry(item.entry.id) },
+                        )
                     }
                 }
             }
@@ -220,7 +226,7 @@ private fun DayHeader(label: String) {
 }
 
 @Composable
-private fun EntryCard(item: EntryWithTags, onClick: () -> Unit) {
+private fun EntryCard(item: EntryWithTags, photos: List<Entry>, onClick: () -> Unit) {
     val entry = item.entry
     Surface(
         onClick = onClick,
@@ -266,6 +272,7 @@ private fun EntryCard(item: EntryWithTags, onClick: () -> Unit) {
                             .clip(RoundedCornerShape(14.dp)),
                     )
                 }
+                EntryType.LINK -> if (photos.isNotEmpty()) PhotoPreview(photos)
                 EntryType.TEXT -> entry.text?.let {
                     Text(
                         text = it,
@@ -301,6 +308,45 @@ private fun EntryCard(item: EntryWithTags, onClick: () -> Unit) {
                 )
             }
             TagPills(item.tags.take(4).map { it.name })
+        }
+    }
+}
+
+/** The first photos of a post side by side; the last one counts those left out. */
+@Composable
+private fun PhotoPreview(photos: List<Entry>) {
+    val shown = photos.take(PREVIEW_PHOTOS)
+    val more = photos.size - shown.size
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(if (shown.size == 1) 220.dp else 150.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        shown.forEachIndexed { i, photo ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(14.dp)),
+            ) {
+                photo.filePath?.let { path ->
+                    EntryImage(path = path, contentDescription = photo.title, modifier = Modifier.fillMaxSize())
+                }
+                if (more > 0 && i == shown.lastIndex) {
+                    Text(
+                        text = "+$more",
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(8.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                    )
+                }
+            }
         }
     }
 }
@@ -396,3 +442,5 @@ private fun CaptureSheet(onDismiss: () -> Unit, onSave: (String) -> Unit) {
         }
     }
 }
+
+private const val PREVIEW_PHOTOS = 3

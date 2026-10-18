@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.deiv.dear.DearApp
+import dev.deiv.dear.data.model.Entry
 import dev.deiv.dear.data.model.EntryType
 import dev.deiv.dear.data.model.EntryWithTags
 import dev.deiv.dear.data.repository.TextMatching
@@ -21,6 +22,8 @@ enum class TypeFilter(val type: EntryType?) {
 
 data class CollectionState(
     val items: List<EntryWithTags> = emptyList(),
+    /** Photos pulled from each link, by link id, in the post's order. */
+    val photos: Map<Long, List<Entry>> = emptyMap(),
     val query: String = "",
     val filter: TypeFilter = TypeFilter.ALL,
     /** Types that actually occur, so filter chips are only shown for those. */
@@ -37,12 +40,19 @@ class CollectionViewModel(application: Application) : AndroidViewModel(applicati
 
     val state: StateFlow<CollectionState> = combine(app.entryRepository.all, query, filter) { all, q, f ->
         val words = TextMatching.normalize(q).split(WHITESPACE).filter { it.isNotEmpty() }
+        // Photos pulled from a post belong to its link: shown and searched as part of it.
+        val photos = all.mapNotNull { p -> p.entry.parentId?.let { it to p } }.groupBy({ it.first }, { it.second })
+        val entries = all.filter { it.entry.parentId == null }
         CollectionState(
-            items = all.filter { (f.type == null || it.entry.type == f.type) && it.matches(words) },
+            items = entries.filter { item ->
+                (f.type == null || item.entry.type == f.type) &&
+                    matches(listOf(item) + photos[item.entry.id].orEmpty(), words)
+            },
+            photos = photos.mapValues { (_, list) -> list.map { it.entry }.sortedBy { it.id } },
             query = q,
             filter = f,
-            availableTypes = all.mapTo(mutableSetOf()) { it.entry.type },
-            totalCount = all.size,
+            availableTypes = entries.mapTo(mutableSetOf()) { it.entry.type },
+            totalCount = entries.size,
             loaded = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CollectionState())
@@ -64,13 +74,16 @@ class CollectionViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch { app.entryRepository.addText(trimmed) }
     }
 
-    /** Plain substring search over everything we know about an entry; FTS and embeddings come later. */
-    private fun EntryWithTags.matches(words: List<String>): Boolean {
+    /** Plain substring search over everything we know about the entries; FTS and embeddings come later. */
+    private fun matches(items: List<EntryWithTags>, words: List<String>): Boolean {
         if (words.isEmpty()) return true
         val haystack = buildString {
-            listOf(entry.title, entry.summary, entry.text, entry.url, entry.extractedText, entry.originalName)
-                .forEach { it?.let { s -> append(TextMatching.normalize(s)).append(' ') } }
-            tags.forEach { append(TextMatching.normalize(it.name)).append(' ') }
+            for (item in items) {
+                val e = item.entry
+                listOf(e.title, e.summary, e.text, e.url, e.extractedText, e.originalName)
+                    .forEach { it?.let { s -> append(TextMatching.normalize(s)).append(' ') } }
+                item.tags.forEach { append(TextMatching.normalize(it.name)).append(' ') }
+            }
         }
         return words.all { it in haystack }
     }

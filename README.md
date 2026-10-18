@@ -21,8 +21,8 @@ The model runs on the phone; nothing goes to a cloud.
   - **Videos** — a few frames looked at in order, plus the transcript of the audio.
   - **Audio** — transcribed in 30-second chunks, then summarized.
   - **Links** — the page's title and description. For a **public Instagram post** the photos of
-    the carousel are pulled in as entries of their own, each one cataloged, and the post's summary
-    is written from what they show.
+    the carousel are pulled in and kept with the link, each one cataloged on its own, and the
+    post's summary is written from what they show.
 
   Cataloging runs in WorkManager and saves progress after every frame or audio chunk, so a run
   Android stops half-way resumes instead of starting over.
