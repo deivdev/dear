@@ -61,13 +61,16 @@ class DiaryAssistant(private val modelManager: ModelManager) {
             }
             else -> (e.title ?: e.originalName)?.let { append(" · ").append(it) }
         }
+        e.parentId?.let { append(" · photo from the post [#").append(it).append(']') }
         e.summary?.let { append(" — ").append(it) }
+        if (e.type == EntryType.IMAGE) e.extractedText?.let { append(" Text in it: \"").append(it.take(IMAGE_TEXT_CHARS)).append('"') }
         if (item.tags.isNotEmpty()) append(" (tags: ").append(item.tags.joinToString { it.name }).append(')')
     }
 
     companion object {
         private const val MAX_HISTORY = 6
         private const val NOTE_CHARS = 300
+        private const val IMAGE_TEXT_CHARS = 200
         private val NOW_FORMAT = DateTimeFormatter.ofPattern("EEEE yyyy-MM-dd HH:mm", Locale.ENGLISH)
         private val ENTRY_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ENGLISH)
 

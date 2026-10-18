@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -164,19 +165,26 @@ class ModelManager(
         }
         _state.value = ModelState.LOADING
         return try {
-            val loaded = withContext(Dispatchers.IO) {
+            // Native loading cannot be interrupted, and withContext drops its result when the caller
+            // is cancelled meanwhile (e.g. it left the screen). The engine is kept inside the block
+            // so it cannot leak gigabytes of weights; the idle timer unloads it.
+            withContext(Dispatchers.IO) {
                 LlamaEngine.load(
                     modelPath = model.file.absolutePath,
                     mmprojPath = model.mmproj?.absolutePath,
                     nativeLibDir = context.applicationInfo.nativeLibraryDir,
-                )
+                ).also { loaded ->
+                    engine = loaded
+                    engineModel = model
+                    lastError = null
+                    _state.value = ModelState.READY
+                    Log.i(TAG, "Loaded ${model.name}: ${loaded.capabilities}")
+                }
             }
-            engine = loaded
-            engineModel = model
-            lastError = null
-            _state.value = ModelState.READY
-            Log.i(TAG, "Loaded ${model.name}: ${loaded.capabilities}")
-            loaded
+        } catch (e: CancellationException) {
+            // The caller went away; the model did not fail.
+            refresh()
+            throw e
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to load ${model.name}", t)
             lastError = t.message
