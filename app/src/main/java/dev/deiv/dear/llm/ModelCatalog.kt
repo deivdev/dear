@@ -1,52 +1,66 @@
 package dev.deiv.dear.llm
 
-data class CatalogModel(
-    val id: String,
-    val displayName: String,
+data class ModelFile(
     val fileName: String,
     val url: String,
     val sizeMB: Int,
-    val ramHint: String,
-    val description: String,
 )
 
+data class CatalogModel(
+    val id: String,
+    val displayName: String,
+    val model: ModelFile,
+    /** Multimodal projector (image + audio input); null for text-only models. */
+    val mmproj: ModelFile?,
+    val ramHint: String,
+    val description: String,
+) {
+    val files: List<ModelFile>
+        get() = listOfNotNull(model, mmproj)
+
+    val totalSizeMB: Int
+        get() = files.sumOf { it.sizeMB }
+}
+
 object ModelCatalog {
+    private const val HF = "https://huggingface.co/ggml-org"
+
     val models: List<CatalogModel> = listOf(
         CatalogModel(
-            id = "llama-3.2-1b",
-            displayName = "Llama 3.2 1B (Q4)",
-            fileName = "Llama-3.2-1B-Instruct-Q4_K_M.gguf",
-            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
-            sizeMB = 808,
-            ramHint = "≥3 GB",
-            description = "Smallest. Fast. OK quality.",
-        ),
-        CatalogModel(
-            id = "qwen2.5-1.5b",
-            displayName = "Qwen 2.5 1.5B (Q4)",
-            fileName = "Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
-            url = "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
-            sizeMB = 986,
-            ramHint = "≥4 GB",
-            description = "Balanced size/quality.",
-        ),
-        CatalogModel(
-            id = "gemma-2-2b",
-            displayName = "Gemma 2 2B IT (Q4)",
-            fileName = "gemma-2-2b-it-Q4_K_M.gguf",
-            url = "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf",
-            sizeMB = 1710,
-            ramHint = "≥5 GB",
-            description = "Stronger reasoning.",
-        ),
-        CatalogModel(
-            id = "phi-4-mini",
-            displayName = "Phi-4 Mini Instruct (Q4)",
-            fileName = "Phi-4-mini-instruct-Q4_K_M.gguf",
-            url = "https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF/resolve/main/Phi-4-mini-instruct-Q4_K_M.gguf",
-            sizeMB = 2492,
+            id = "gemma-4-e2b",
+            displayName = "Gemma 4 E2B",
+            model = ModelFile(
+                fileName = "gemma-4-E2B-it-Q4_0.gguf",
+                url = "$HF/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_0.gguf",
+                sizeMB = 2841,
+            ),
+            mmproj = ModelFile(
+                fileName = "mmproj-gemma-4-E2B-it-Q8_0.gguf",
+                url = "$HF/gemma-4-E2B-it-GGUF/resolve/main/mmproj-gemma-4-E2B-it-Q8_0.gguf",
+                sizeMB = 557,
+            ),
             ramHint = "≥6 GB",
-            description = "Recommended. Best quality.",
+            description = "Recommended. Text, images and audio; light enough for background cataloging.",
+        ),
+        CatalogModel(
+            id = "gemma-4-e4b",
+            displayName = "Gemma 4 E4B",
+            model = ModelFile(
+                fileName = "gemma-4-E4B-it-Q4_0.gguf",
+                url = "$HF/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q4_0.gguf",
+                sizeMB = 4591,
+            ),
+            mmproj = ModelFile(
+                fileName = "mmproj-gemma-4-E4B-it-Q8_0.gguf",
+                url = "$HF/gemma-4-E4B-it-GGUF/resolve/main/mmproj-gemma-4-E4B-it-Q8_0.gguf",
+                sizeMB = 560,
+            ),
+            ramHint = "≥8 GB",
+            description = "Better quality, slower and heavier on RAM and battery.",
         ),
     )
+
+    fun byModelFileName(name: String): CatalogModel? = models.firstOrNull { it.model.fileName == name }
+
+    fun isProjector(name: String): Boolean = models.any { it.mmproj?.fileName == name } || name.startsWith("mmproj")
 }

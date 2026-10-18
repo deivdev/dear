@@ -7,6 +7,7 @@ import android.os.Debug
 data class ModelStats(
     val modelName: String,
     val modelSizeMB: Long,
+    val multimodal: Boolean,
     val processRamMB: Long,
     val deviceTotalRamMB: Long,
     val deviceAvailRamMB: Long,
@@ -18,8 +19,8 @@ data class ModelStats(
 
 object ModelStatsCollector {
     fun collect(context: Context, modelManager: ModelManager): ModelStats? {
-        val file = modelManager.currentModelFile ?: return null
-        val model = modelManager.getModel() ?: return null
+        val model = modelManager.installed() ?: return null
+        val last = modelManager.lastStats.value
 
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val mi = ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
@@ -27,15 +28,16 @@ object ModelStatsCollector {
         val procKb = procMem.totalPss.toLong() // PSS in KB
 
         return ModelStats(
-            modelName = file.name,
-            modelSizeMB = file.length() / 1_000_000,
+            modelName = model.name,
+            modelSizeMB = (model.file.length() + (model.mmproj?.length() ?: 0)) / 1_000_000,
+            multimodal = model.mmproj != null,
             processRamMB = procKb / 1024,
             deviceTotalRamMB = mi.totalMem / 1_000_000,
             deviceAvailRamMB = mi.availMem / 1_000_000,
             lowMemory = mi.lowMemory,
-            tokensPerSec = model.lastTokensPerSec,
-            lastTokenCount = model.lastTokenCount,
-            lastDurationMs = model.lastDurationMs,
+            tokensPerSec = last?.tokensPerSec ?: 0.0,
+            lastTokenCount = last?.generatedTokens ?: 0,
+            lastDurationMs = last?.durationMs ?: 0,
         )
     }
 }

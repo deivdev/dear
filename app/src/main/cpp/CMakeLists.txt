@@ -23,8 +23,16 @@ if(DEFINED ANDROID_ABI)
     endif()
 endif()
 
+# CPU backends are built for every ARM feature level (dotprod, i8mm, SVE, ...) as separate shared
+# libraries; the best one for the device is picked at runtime by ggml_backend_load_all_from_path().
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+set(GGML_BACKEND_DL ON CACHE BOOL "" FORCE)
+set(GGML_CPU_ALL_VARIANTS ON CACHE BOOL "" FORCE)
+
 set(LLAMA_SRC ${CMAKE_CURRENT_LIST_DIR}/llama.cpp)
 set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_MTMD ON CACHE BOOL "" FORCE)
+set(LLAMA_OPENSSL OFF CACHE BOOL "" FORCE)
 add_subdirectory(${LLAMA_SRC} build-llama)
 
 # --- JNI bridge library ---
@@ -43,10 +51,12 @@ target_include_directories(llama-android PRIVATE
         ${LLAMA_SRC}/common
         ${LLAMA_SRC}/include
         ${LLAMA_SRC}/ggml/include
-        ${LLAMA_SRC}/ggml/src)
+        ${LLAMA_SRC}/ggml/src
+        ${LLAMA_SRC}/tools/mtmd)
 
 target_link_libraries(llama-android
         llama
-        common
+        llama-common
+        mtmd
         android
         log)

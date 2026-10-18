@@ -2,7 +2,6 @@ package dev.deiv.dear.llm
 
 import android.app.DownloadManager
 import android.content.Context
-import android.database.Cursor
 import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -14,8 +13,8 @@ import java.io.File
 
 sealed class DownloadProgress {
     object Idle : DownloadProgress()
-    data class Running(val bytesDownloaded: Long, val totalBytes: Long, val status: Int) : DownloadProgress()
-    data class Done(val file: File) : DownloadProgress()
+    data class Running(val bytesDownloaded: Long, val totalBytes: Long) : DownloadProgress()
+    data class Done(val model: CatalogModel) : DownloadProgress()
     data class Failed(val reason: String) : DownloadProgress()
 }
 
@@ -25,14 +24,66 @@ class ModelDownloader(private val context: Context, private val modelManager: Mo
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
 
-    fun start(model: CatalogModel): Long {
-        // Use external cache as DownloadManager target, then move to internal model dir on completion.
-        val cacheDir = File(context.externalCacheDir ?: context.cacheDir, "model-downloads").apply { mkdirs() }
-        val dest = File(cacheDir, model.fileName)
-        if (dest.exists()) dest.delete()
+    private val downloadDir: File
+        get() = File(context.externalCacheDir ?: context.cacheDir, "model-downloads").apply { mkdirs() }
 
-        val req = DownloadManager.Request(Uri.parse(model.url)).apply {
-            setTitle(model.displayName)
+    /** Enqueues the files of [model] that are not installed yet; returns their DownloadManager ids. */
+    fun start(model: CatalogModel): List<Long> =
+        model.files
+            .filterNot { File(modelManager.modelDir, it.fileName).exists() }
+            .map { file -> enqueue(file, model.displayName) }
+
+    fun cancel(ids: List<Long>) {
+        if (ids.isNotEmpty()) dm.remove(*ids.toLongArray())
+    }
+
+    /**
+     * Polls the downloads of [model]. Files are moved into the model directory only once all of
+     * them finished, so a model never becomes visible without its projector.
+     */
+    fun observe(model: CatalogModel, ids: List<Long>, pollMs: Long = 500): Flow<DownloadProgress> = flow {
+        emit(DownloadProgress.Idle)
+        val expectedBytes = model.files.sumOf { it.sizeMB.toLong() * 1_000_000 }
+        while (true) {
+            var downloaded = 0L
+            val finished = mutableListOf<File>()
+            for (id in ids) {
+                val row = query(id) ?: run {
+                    emit(DownloadProgress.Failed("download $id not found"))
+                    return@flow
+                }
+                when (row.status) {
+                    DownloadManager.STATUS_SUCCESSFUL -> {
+                        val file = row.localFile ?: run {
+                            emit(DownloadProgress.Failed("downloaded file missing"))
+                            return@flow
+                        }
+                        downloaded += file.length()
+                        finished += file
+                    }
+                    DownloadManager.STATUS_FAILED -> {
+                        emit(DownloadProgress.Failed("failed (reason=${row.reason})"))
+                        return@flow
+                    }
+                    else -> downloaded += row.bytesSoFar
+                }
+            }
+            if (finished.size == ids.size) {
+                finished.forEach(::moveIntoModelDir)
+                modelManager.refresh()
+                emit(DownloadProgress.Done(model))
+                return@flow
+            }
+            emit(DownloadProgress.Running(downloaded, expectedBytes))
+            delay(pollMs)
+        }
+    }.flowOn(Dispatchers.IO)
+
+    private fun enqueue(file: ModelFile, title: String): Long {
+        val dest = File(downloadDir, file.fileName)
+        if (dest.exists()) dest.delete()
+        val req = DownloadManager.Request(Uri.parse(file.url)).apply {
+            setTitle("$title · ${file.fileName}")
             setDescription("Downloading model for Dear")
             setAllowedOverMetered(true)
             setAllowedOverRoaming(false)
@@ -43,51 +94,21 @@ class ModelDownloader(private val context: Context, private val modelManager: Mo
         return dm.enqueue(req)
     }
 
-    fun cancel(id: Long) {
-        dm.remove(id)
-    }
+    private class Row(val status: Int, val reason: Int, val bytesSoFar: Long, val localFile: File?)
 
-    fun observe(id: Long, pollMs: Long = 500): Flow<DownloadProgress> = flow {
-        emit(DownloadProgress.Idle)
-        while (true) {
-            val q = DownloadManager.Query().setFilterById(id)
-            val cursor: Cursor = dm.query(q) ?: run {
-                emit(DownloadProgress.Failed("query returned null"))
-                return@flow
-            }
-            cursor.use {
-                if (!it.moveToFirst()) {
-                    emit(DownloadProgress.Failed("download not found"))
-                    return@flow
-                }
-                val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                val downloaded = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                val total = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-                when (status) {
-                    DownloadManager.STATUS_SUCCESSFUL -> {
-                        val localUri = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
-                        val src = Uri.parse(localUri).path?.let { p -> File(p) }
-                        if (src == null || !src.exists()) {
-                            emit(DownloadProgress.Failed("downloaded file missing"))
-                            return@flow
-                        }
-                        val finalFile = moveIntoModelDir(src)
-                        emit(DownloadProgress.Done(finalFile))
-                        return@flow
-                    }
-                    DownloadManager.STATUS_FAILED -> {
-                        val reason = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
-                        emit(DownloadProgress.Failed("failed (reason=$reason)"))
-                        return@flow
-                    }
-                    else -> emit(DownloadProgress.Running(downloaded, total, status))
-                }
-            }
-            delay(pollMs)
+    private fun query(id: Long): Row? =
+        dm.query(DownloadManager.Query().setFilterById(id))?.use { c ->
+            if (!c.moveToFirst()) return null
+            val localUri = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
+            Row(
+                status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)),
+                reason = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)),
+                bytesSoFar = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)),
+                localFile = localUri?.let { Uri.parse(it).path }?.let { File(it) }?.takeIf { it.exists() },
+            )
         }
-    }.flowOn(Dispatchers.IO)
 
-    private fun moveIntoModelDir(src: File): File {
+    private fun moveIntoModelDir(src: File) {
         val dest = File(modelManager.modelDir, src.name)
         if (dest.exists()) dest.delete()
         if (!src.renameTo(dest)) {
@@ -97,8 +118,9 @@ class ModelDownloader(private val context: Context, private val modelManager: Mo
             }
             src.delete()
         }
-        Log.i(TAG, "Model moved to ${dest.absolutePath}")
-        return dest
+        // The newest model file is the active one.
+        dest.setLastModified(System.currentTimeMillis())
+        Log.i(TAG, "Model file moved to ${dest.absolutePath}")
     }
 
     companion object {

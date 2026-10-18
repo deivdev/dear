@@ -1,4 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dear</string>
+
+    <!-- Navigation -->
+    <string name="nav_collection">Raccolta</string>
+    <string name="nav_ask">Chiedi</string>
+    <string name="action_settings">Impostazioni</string>
+    <string name="action_back">Indietro</string>
+    <string name="action_new">Nuovo</string>
+    <string name="action_cancel">Annulla</string>
+
+    <!-- Collection -->
+    <string name="search_hint">Cerca nella raccolta</string>
+    <string name="search_clear">Cancella ricerca</string>
+    <string name="filter_all">Tutto</string>
+    <string name="filter_image">Foto</string>
+    <string name="filter_link">Link</string>
+    <string name="filter_text">Note</string>
+    <string name="filter_video">Video</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_file">File</string>
+    <plurals name="catalog_pending">
+        <item quantity="one">Catalogo · 1 in coda</item>
+        <item quantity="other">Catalogo · %d in coda</item>
+    </plurals>
+    <string name="day_today">Oggi</string>
+    <string name="day_yesterday">Ieri</string>
+    <string name="empty_title">Vuoto</string>
+    <string name="empty_body">Condividi qualcosa con Dear da qualsiasi app, oppure tocca + per scrivere una nota.</string>
+    <string name="no_results">Nessun risultato</string>
+    <string name="status_pending">In coda</string>
+    <string name="status_processing">Analisi</string>
+    <string name="status_failed">Errore</string>
+    <string name="from_app">da %1$s</string>
+
+    <!-- Capture -->
+    <string name="capture_title">Nuova nota</string>
+    <string name="capture_hint">Scrivi una nota o incolla un link…</string>
+    <string name="capture_save">Salva</string>
+
+    <!-- Entry detail -->
+    <string name="entry_open">Apri</string>
+    <string name="entry_share">Condividi</string>
+    <string name="entry_delete">Elimina</string>
+    <string name="entry_recatalog">Ricataloga</string>
+    <string name="entry_delete_title">Eliminare questo elemento?</string>
+    <string name="entry_delete_body">Verrà rimosso da Dear insieme al file salvato.</string>
+    <string name="entry_not_found">Elemento non trovato</string>
+    <string name="open_failed">Nessuna app può aprirlo</string>
+    <string name="section_summary">Riassunto</string>
+    <string name="section_tags">Tag</string>
+    <string name="section_visible_text">Testo nell\'immagine</string>
+    <string name="section_page">Dalla pagina</string>
+    <string name="section_note">Nota</string>
+    <string name="section_catalog">Catalogo</string>
+    <string name="section_transcript">Trascrizione</string>
+    <string name="catalog_done">Catalogato il %1$s · %2$s</string>
+    <string name="catalog_failed">Fallito dopo %1$d tentativi: %2$s</string>
+    <string name="catalog_waiting">In attesa di catalogazione</string>
+    <string name="catalog_in_progress">Il modello lo sta analizzando</string>
+
+    <!-- Ask -->
+    <string name="ask_hint">Chiedi alla tua raccolta…</string>
+    <string name="ask_send">Invia</string>
+    <string name="ask_sessions">Sessioni</string>
+    <string name="ask_new_session">Nuova sessione</string>
+    <string name="ask_no_sessions">Nessuna sessione salvata</string>
+    <string name="ask_delete_session">Elimina sessione</string>
+    <string name="ask_references">Riferimenti</string>
+    <string name="model_status_speed">%1$s · %2$.1f tok/s</string>
+    <string name="model_status_idle">%1$s · pronto</string>
+    <string name="model_status_loading">Carico %1$s…</string>
+    <string name="ask_empty">Chiedimi cosa hai salvato, cosa c\'era in quella foto, quel link della settimana scorsa…</string>
+    <string name="model_missing_title">Nessun modello</string>
+    <string name="model_missing_body">Scarica un modello nelle impostazioni per catalogare e chiedere.</string>
+    <string name="model_loading">Carico il modello…</string>
+    <string name="model_error">Il modello non si è caricato</string>
+    <string name="open_settings">Apri impostazioni</string>
+
+    <!-- Settings -->
+    <string name="section_model">Modello</string>
+    <string name="section_catalog_activity">Attività del catalogo</string>
+    <string name="section_about">Info</string>
+    <string name="model_loaded">Caricato in memoria</string>
+    <string name="model_idle">Installato · si carica quando serve</string>
+    <string name="model_multimodal">Testo, immagini e audio</string>
+    <string name="model_text_only">Solo testo</string>
+    <string name="model_size">%1$d MB · RAM processo %2$d MB</string>
+    <string name="model_device_ram">Telefono: %1$d / %2$d MB liberi</string>
+    <string name="model_last_gen">Ultima generazione: %1$d token · %2$.1f tok/s</string>
+    <string name="model_delete">Elimina modello</string>
+    <string name="install_model">Installa un modello</string>
+    <string name="install_model_body">Si scarica una volta, poi tutto resta sul telefono.</string>
+    <string name="download">Scarica</string>
+    <string name="downloading">Download · %1$d / %2$d MB</string>
+    <string name="download_failed">Download fallito: %1$s</string>
+    <string name="import_gguf">Importa GGUF locale</string>
+    <string name="model_ram_hint">%1$d MB · RAM %2$s</string>
+    <string name="catalog_idle">Nessun lavoro in corso</string>
+    <string name="catalog_running">In corso · elemento %1$d</string>
+    <string name="step_frame">fotogramma %1$d/%2$d</string>
+    <string name="step_audio">audio %1$d/%2$d</string>
+    <string name="step_summary">riepilogo</string>
+    <string name="catalog_history_empty">Nessuna attività in questa sessione</string>
+    <string name="about_body">Tutto resta sul telefono: nessun cloud, nessuna telemetria. Solo i link salvati vengono aperti in rete per leggerne il titolo.</string>
+    <string name="about_fonts">Font: Doto, Space Grotesk, Space Mono · SIL Open Font License</string>
+
+    <!-- Share -->
+    <plurals name="share_saved">
+        <item quantity="one">Salvato in Dear</item>
+        <item quantity="other">%d elementi salvati in Dear</item>
+    </plurals>
+    <string name="share_failed">Impossibile salvare</string>
+
+    <!-- Background cataloging -->
+    <string name="catalog_channel_name">Catalogazione</string>
+    <string name="catalog_notification_text">Sto catalogando i tuoi elementi…</string>
 </resources>

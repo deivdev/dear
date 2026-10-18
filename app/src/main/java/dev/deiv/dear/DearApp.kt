@@ -1,17 +1,27 @@
 package dev.deiv.dear
 
 import android.app.Application
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.video.VideoFrameDecoder
+import dev.deiv.dear.catalog.CatalogProcessor
+import dev.deiv.dear.catalog.CatalogWorker
 import dev.deiv.dear.data.db.DearDatabase
+import dev.deiv.dear.data.repository.ChatRepository
 import dev.deiv.dear.data.repository.EntryRepository
-import dev.deiv.dear.llm.CatalogQueue
 import dev.deiv.dear.llm.ModelDownloader
 import dev.deiv.dear.llm.ModelManager
+import dev.deiv.dear.llm.ModelState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-class DearApp : Application() {
+class DearApp : Application(), SingletonImageLoader.Factory {
 
     lateinit var modelManager: ModelManager
         private set
@@ -19,7 +29,10 @@ class DearApp : Application() {
     lateinit var entryRepository: EntryRepository
         private set
 
-    lateinit var catalogQueue: CatalogQueue
+    lateinit var catalogProcessor: CatalogProcessor
+        private set
+
+    lateinit var chatRepository: ChatRepository
         private set
 
     lateinit var modelDownloader: ModelDownloader
@@ -31,13 +44,27 @@ class DearApp : Application() {
         super.onCreate()
         val db = DearDatabase.getInstance(this)
         val dao = db.entryDao()
-        modelManager = ModelManager(this)
+        modelManager = ModelManager(this, appScope)
         modelDownloader = ModelDownloader(this, modelManager)
-        catalogQueue = CatalogQueue(appScope, dao, modelManager)
-        entryRepository = EntryRepository(this, dao) { id -> catalogQueue.enqueue(id) }
-        catalogQueue.start()
+        catalogProcessor = CatalogProcessor(this, dao, modelManager)
+        entryRepository = EntryRepository(this, dao, requestCatalog = catalogProcessor::schedule)
+        chatRepository = ChatRepository(db.chatDao())
+        CatalogWorker.createNotificationChannel(this)
+
+        // The model is loaded on demand by whoever needs it, not at every process start. A run is
+        // requested at startup (leftovers) and whenever a model gets installed.
         appScope.launch {
-            modelManager.loadModel()
+            modelManager.state
+                .map { it != ModelState.NOT_INSTALLED }
+                .distinctUntilChanged()
+                .filter { it }
+                .collect { catalogProcessor.schedule() }
         }
     }
+
+    /** Coil with video support, so video entries get a frame as thumbnail. */
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context)
+            .components { add(VideoFrameDecoder.Factory()) }
+            .build()
 }

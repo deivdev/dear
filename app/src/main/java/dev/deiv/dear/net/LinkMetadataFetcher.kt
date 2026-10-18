@@ -27,7 +27,7 @@ object LinkMetadataFetcher {
         oembedFor(url)?.let { return@withContext it }
 
         runCatching { fetchHtml(url) }
-            .onFailure { Log.w(TAG, "Failed to fetch $url: ${it.message}") }
+            .onFailure { Log.w(TAG, "Failed to fetch link metadata: ${it.javaClass.simpleName}") }
             .getOrNull()
             ?.let { parseHtml(it) }
     }

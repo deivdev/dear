@@ -4,10 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import dev.deiv.dear.DearApp
+import dev.deiv.dear.R
 import dev.deiv.dear.data.repository.EntryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,7 +31,7 @@ class ShareReceiverActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        intent ?: return finishWithToast("Nothing to capture")
+        intent ?: return finishWithToast(getString(R.string.share_failed))
         val sourceApp = intent.getStringExtra(Intent.EXTRA_REFERRER_NAME)
             ?: referrer?.host
 
@@ -41,7 +43,10 @@ class ShareReceiverActivity : ComponentActivity() {
                     else -> 0
                 }
             }
-            finishWithToast(if (count > 0) "Captured $count item(s)" else "Capture failed")
+            finishWithToast(
+                if (count > 0) resources.getQuantityString(R.plurals.share_saved, count, count)
+                else getString(R.string.share_failed)
+            )
         }
     }
 
@@ -49,13 +54,17 @@ class ShareReceiverActivity : ComponentActivity() {
         val mime = intent.type
         val uri = intent.getParcelableExtraCompat<Uri>(Intent.EXTRA_STREAM)
         val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+        val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT)
         return when {
             uri != null -> {
-                runCatching { repo.addFromUri(uri, mime, sourceApp) }
+                // Text shared alongside a file is its caption, not a separate entry.
+                runCatching { repo.addFromUri(uri, mime, sourceApp, caption = text) }
+                    .onFailure { Log.e(TAG, "Failed to capture shared stream", it) }
                     .map { 1 }.getOrDefault(0)
             }
             !text.isNullOrBlank() -> {
-                runCatching { repo.addText(text, sourceApp) }
+                runCatching { repo.addText(text, sourceApp, subject) }
+                    .onFailure { Log.e(TAG, "Failed to capture shared text", it) }
                     .map { 1 }.getOrDefault(0)
             }
             else -> 0
@@ -66,10 +75,12 @@ class ShareReceiverActivity : ComponentActivity() {
         val uris = intent.getParcelableArrayListExtraCompat<Uri>(Intent.EXTRA_STREAM)
             ?: return 0
         val mime = intent.type
+        val caption = intent.getStringExtra(Intent.EXTRA_TEXT)
         var ok = 0
         for (u in uris) {
-            runCatching { repo.addFromUri(u, mime, sourceApp) }
+            runCatching { repo.addFromUri(u, mime, sourceApp, caption) }
                 .onSuccess { ok++ }
+                .onFailure { Log.e(TAG, "Failed to capture shared stream", it) }
         }
         return ok
     }
@@ -77,6 +88,10 @@ class ShareReceiverActivity : ComponentActivity() {
     private fun finishWithToast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         finish()
+    }
+
+    companion object {
+        private const val TAG = "ShareReceiverActivity"
     }
 
     @Suppress("DEPRECATION")
