@@ -1,58 +1,116 @@
 # Dear
 
-Android app. Second brain on-device, powered by local LLM.
+A second brain that lives on your Android phone. Share anything into it — links, photos, videos,
+voice notes, text — and a local LLM catalogs it for you: a title, a summary, tags, the text inside
+images, the transcript of what is said. Then ask your collection questions in plain language.
+The model runs on the phone; nothing goes to a cloud.
 
-## Goals
+<p align="center">
+  <img src="docs/screenshots/collection.png" width="24%" alt="Collection" />
+  <img src="docs/screenshots/link.png" width="24%" alt="An Instagram post with its photos" />
+  <img src="docs/screenshots/photo.png" width="24%" alt="A photo with its transcribed text" />
+  <img src="docs/screenshots/ask.png" width="24%" alt="Asking the collection" />
+</p>
 
-1. **Collect everything.** Single inbox for video, image, text, audio, links — anything worth keeping.
-2. **Frictionless capture.** Register as Android share target — send from any app via the system share sheet. One tap, done.
-3. **Auto-catalog.** Every input gets classified, tagged, and indexed automatically by the on-device LLM. No manual sorting.
-4. **Find anything later.** Keyword/semantic search across months of captures.
+## What it does
 
-## Stack
+- **Capture from any app.** Dear is a system share target: share a link, a photo, a video, a voice
+  message, and it is saved. Notes can be written with the + button.
+- **Catalogs everything, in the background.** Each entry goes through Gemma 4 on the phone:
+  - **Photos** — what they show, and any readable text transcribed.
+  - **Videos** — a few frames looked at in order, plus the transcript of the audio.
+  - **Audio** — transcribed in 30-second chunks, then summarized.
+  - **Links** — the page's title and description. For a **public Instagram post** the photos of
+    the carousel are pulled in as entries of their own, each one cataloged, and the post's summary
+    is written from what they show.
 
-- Kotlin + Jetpack Compose
-- llama.cpp for on-device LLM inference (JNI)
-- Room for local persistence
-- KSP (Kotlin Symbol Processing)
+  Cataloging runs in WorkManager and saves progress after every frame or audio chunk, so a run
+  Android stops half-way resumes instead of starting over.
+- **Collection** — everything by day, with search over titles, summaries, tags and transcribed
+  text, and filters by type.
+- **Ask** — chat with your collection ("what was that link about slow living?", "what did I save
+  this week?"). Answers cite the entries they come from, and the citations open them.
+
+The interface is in Italian.
+
+## Models
+
+Downloaded once from Hugging Face in Settings, or imported from a local GGUF file.
+
+| Model | Size | RAM | Notes |
+|---|---|---|---|
+| Gemma 4 E2B (Q4_0) | 2.8 GB + 0.6 GB projector | ≥ 6 GB | Recommended. Text, images and audio. |
+| Gemma 4 E4B (Q4_0) | 4.6 GB + 0.6 GB projector | ≥ 8 GB | Better quality, slower. |
+
+Cataloging output is constrained by a JSON grammar, so every reply parses. arm64 devices only.
 
 ## Privacy
 
-On-device by default. No telemetry, no location tracking. All entries stored in app-internal storage. LLM inference local via llama.cpp + GGUF model on device.
+On-device by default: no account, no telemetry, no cloud. Entries live in app-internal storage and
+Android backup is disabled. The app goes online only for:
 
-**Network use:** when you save a LINK entry, the app fetches that URL directly (no proxy) to read its `<title>`/Open Graph metadata for cataloging. The destination site sees your IP and the URL. All other features (text notes, shared media, chat, search) are fully offline.
+- **The model download**, once, from huggingface.co.
+- **Saved links**: the app fetches the URL itself (no proxy) to read its title and Open Graph
+  metadata; YouTube and Vimeo links go through their oEmbed endpoints. The site sees your IP and
+  the URL.
+- **Instagram posts**: the post's public embed page and its photos from Instagram's CDN.
+
+Everything else — notes, shared media, cataloging, search, chat — works offline.
+
+## Status
+
+Early (0.1). Working: share capture, multimodal cataloging, collection with keyword search, ask
+with citations. Planned: semantic search with an embedding model, export/import of the archive,
+videos and reels from Instagram.
+
+## Stack
+
+- Kotlin, Jetpack Compose, Material 3, Navigation Compose
+- [llama.cpp](https://github.com/ggml-org/llama.cpp) with libmtmd over JNI, for text, image and
+  audio input
+- Room (exported schemas, explicit migrations), WorkManager, Coil
 
 ## Architecture
 
 ```
 app/src/main/java/dev/deiv/dear/
-├── DearApp.kt              # Application entry point
+├── DearApp.kt                 # Application: manual DI, schedules cataloging
+├── catalog/
+│   ├── CatalogWorker.kt       # WorkManager job that runs the catalog queue
+│   ├── CatalogProcessor.kt    # Picks pending entries, retries, progress
+│   └── PostPhotos.kt          # Pulls the photos of a shared post into entries
 ├── llm/
-│   ├── LlamaModel.kt       # llama.cpp JNI bindings
-│   ├── ModelManager.kt     # Model lifecycle
-│   └── DiaryAssistant.kt   # Cataloging + chat logic
+│   ├── LlmEngine.kt           # Engine interface (requests, media, JSON schema)
+│   ├── LlamaEngine.kt         # llama.cpp implementation (JNI)
+│   ├── ModelManager.kt        # Load on demand, release when idle
+│   ├── ModelCatalog.kt        # Downloadable models
+│   ├── EntryCataloger.kt      # Title, summary, tags, visible text, transcripts
+│   └── DiaryAssistant.kt      # Answers questions about the collection
+├── media/                     # Audio decoding, video frame extraction
+├── net/                       # Link metadata, Instagram embed reader
 ├── data/
-│   ├── db/                 # Room DB, DAOs (EntryDao)
-│   ├── model/              # Entry entity (table: entries)
-│   └── repository/         # EntryRepository
+│   ├── db/                    # Room database and DAOs
+│   ├── model/                 # Entry, Tag, chat sessions
+│   └── repository/            # EntryRepository, ChatRepository, keyword matching
 └── ui/
-    ├── MainActivity.kt
-    ├── capture/            # Manual note entry
-    ├── share/              # ShareReceiverActivity (system share target)
-    ├── timeline/           # Chronological view of all captures
-    ├── chat/               # Query/chat with collection
+    ├── collection/            # Collection: timeline, search, filters, + note
+    ├── entry/                 # Entry detail
+    ├── ask/                   # Chat with the collection
+    ├── settings/              # Model install, catalog activity
+    ├── share/                 # ShareReceiverActivity (system share target)
     └── theme/
 ```
 
 ## Build
 
-```bash
-./gradlew assembleDebug   # build APK
-./gradlew installDebug    # build + install on connected device
-```
-
-First build pulls the `llama.cpp` submodule:
+Needs the Android SDK with NDK 29 and CMake.
 
 ```bash
-git submodule update --init --recursive
+git submodule update --init --recursive   # first time: pulls llama.cpp
+./gradlew assembleDebug                   # build the APK
+./gradlew installDebug                    # build and install on a connected device
 ```
+
+## License
+
+MIT
