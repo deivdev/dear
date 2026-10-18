@@ -26,11 +26,12 @@ import dev.deiv.dear.data.model.Tag
         ChatMessage::class,
         MessageEntry::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 5, to = 6), // chat sessions, messages and their entry citations
         AutoMigration(from = 6, to = 7), // entries.durationMs, entries.catalogState
+        AutoMigration(from = 7, to = 8), // entries.parentId: photos pulled from a shared link
     ],
 )
 abstract class DearDatabase : RoomDatabase() {

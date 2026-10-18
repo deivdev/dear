@@ -46,6 +46,10 @@
     <string name="entry_recatalog">Ricataloga</string>
     <string name="entry_delete_title">Eliminare questo elemento?</string>
     <string name="entry_delete_body">Verrà rimosso da Dear insieme al file salvato.</string>
+    <plurals name="entry_delete_body_photos">
+        <item quantity="one">Verrà rimosso da Dear insieme alla foto scaricata dal post.</item>
+        <item quantity="other">Verrà rimosso da Dear insieme alle %d foto scaricate dal post.</item>
+    </plurals>
     <string name="entry_not_found">Elemento non trovato</string>
     <string name="open_failed">Nessuna app può aprirlo</string>
     <string name="section_summary">Riassunto</string>
@@ -55,6 +59,8 @@
     <string name="section_note">Nota</string>
     <string name="section_catalog">Catalogo</string>
     <string name="section_transcript">Trascrizione</string>
+    <string name="section_photos">Foto · %d</string>
+    <string name="section_from_link">Dal post</string>
     <string name="catalog_done">Catalogato il %1$s · %2$s</string>
     <string name="catalog_failed">Fallito dopo %1$d tentativi: %2$s</string>
     <string name="catalog_waiting">In attesa di catalogazione</string>

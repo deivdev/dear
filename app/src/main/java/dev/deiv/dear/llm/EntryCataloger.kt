@@ -42,19 +42,28 @@ class EntryCataloger(
     private val report: (CatalogStep) -> Unit = {},
 ) {
 
-    suspend fun catalog(entry: Entry): CatalogResult {
+    /**
+     * [parent] is the link a photo was pulled from; [photos] are the already cataloged photos of a
+     * link, whose descriptions the link's summary is written from.
+     */
+    suspend fun catalog(entry: Entry, parent: Entry? = null, photos: List<Entry> = emptyList()): CatalogResult {
         val multimodal = modelManager.installed()?.mmproj != null
         val path = entry.filePath
         return when {
             multimodal && path != null && entry.type == EntryType.VIDEO -> catalogVideo(entry, path)
             multimodal && path != null && entry.type == EntryType.AUDIO -> catalogAudio(entry, path)
-            else -> catalogSingle(entry, multimodal)
+            else -> catalogSingle(entry, multimodal, parent, photos)
         }
     }
 
     // --- Notes, links, photos, files: one call ---
 
-    private suspend fun catalogSingle(entry: Entry, multimodal: Boolean): CatalogResult {
+    private suspend fun catalogSingle(
+        entry: Entry,
+        multimodal: Boolean,
+        parent: Entry?,
+        photos: List<Entry>,
+    ): CatalogResult {
         // Network and decoding happen before taking the model, which is shared with chat.
         val link = fetchLink(entry)
         val image = if (entry.type == EntryType.IMAGE && multimodal) {
@@ -64,8 +73,10 @@ class EntryCataloger(
         }
         val body = when (entry.type) {
             EntryType.TEXT -> "Saved note:\n${entry.text.orEmpty()}"
-            EntryType.LINK -> "Saved link: ${entry.url.orEmpty()}" + (link?.description?.let { "\n$it" } ?: "")
-            else -> "Saved ${entry.type.name.lowercase()} file${fileLabel(entry)}"
+            EntryType.LINK -> "Saved link: ${entry.url.orEmpty()}" + (link?.description?.let { "\n$it" } ?: "") +
+                photosLabel(photos)
+            else -> "Saved ${entry.type.name.lowercase()} file${fileLabel(entry)}" +
+                (parent?.url?.let { "\nOne of the photos of a post saved from this link: $it" } ?: "")
         }
         val json = summarize(entry, body, image)
         val visibleText = json.optString("visible_text").trim().takeIf { it.isNotEmpty() }
@@ -262,6 +273,21 @@ class EntryCataloger(
         entry.mimeType?.let { append(" (").append(it).append(')') }
     }
 
+    /** What a post's photos show, from their own catalog runs. */
+    private fun photosLabel(photos: List<Entry>): String {
+        val described = photos.withIndex().filter { (_, p) -> p.summary != null || p.extractedText != null }
+        if (described.isEmpty()) return ""
+        return buildString {
+            append("\nThe post's photos, in order:")
+            for ((i, photo) in described) {
+                append('\n').append(i + 1).append('.')
+                photo.title?.let { append(' ').append(it).append('.') }
+                photo.summary?.let { append(' ').append(it) }
+                photo.extractedText?.let { append(" Text in it: \"").append(it.take(PHOTO_TEXT_CHARS)).append('"') }
+            }
+        }.take(PHOTOS_PROMPT_CHARS)
+    }
+
     private fun durationLabel(ms: Long): String =
         if (ms <= 0) "" else " — duration %d:%02d".format(ms / 60_000, ms / 1000 % 60)
 
@@ -322,6 +348,8 @@ class EntryCataloger(
         private const val CHUNK_SECONDS = 30
         private const val SILENCE_RMS = 0.003
         private const val TRANSCRIPT_PROMPT_CHARS = 6000
+        private const val PHOTO_TEXT_CHARS = 400
+        private const val PHOTOS_PROMPT_CHARS = 6000
         private val WHITESPACE = Regex("""\s+""")
 
         private const val TEXT_PROPERTIES = """

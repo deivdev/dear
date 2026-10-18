@@ -17,6 +17,9 @@ interface EntryDao {
     @Insert
     suspend fun insert(entry: Entry): Long
 
+    @Insert
+    suspend fun insertAll(entries: List<Entry>): List<Long>
+
     @Delete
     suspend fun delete(entry: Entry)
 
@@ -37,6 +40,13 @@ interface EntryDao {
 
     @Query("SELECT * FROM entries ORDER BY createdAt DESC LIMIT :limit")
     suspend fun getRecent(limit: Int): List<Entry>
+
+    /** Photos pulled from link [parentId], in the order they had there. */
+    @Query("SELECT * FROM entries WHERE parentId = :parentId ORDER BY id")
+    suspend fun getChildren(parentId: Long): List<Entry>
+
+    @Query("SELECT * FROM entries WHERE parentId = :parentId ORDER BY id")
+    fun observeChildren(parentId: Long): Flow<List<Entry>>
 
     // --- Catalog lifecycle ---
 

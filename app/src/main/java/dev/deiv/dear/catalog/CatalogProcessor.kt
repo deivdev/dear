@@ -8,6 +8,7 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import dev.deiv.dear.data.db.EntryDao
 import dev.deiv.dear.data.model.CatalogStatus
+import dev.deiv.dear.data.model.Entry
 import dev.deiv.dear.data.model.EntryType
 import dev.deiv.dear.llm.CatalogStep
 import dev.deiv.dear.llm.EntryCataloger
@@ -49,6 +50,8 @@ class CatalogProcessor(
     private val dao: EntryDao,
     private val modelManager: ModelManager,
 ) {
+    private val postPhotos = PostPhotos(context, dao)
+
     private val _current = MutableStateFlow<CatalogJob?>(null)
     val current: StateFlow<CatalogJob?> = _current.asStateFlow()
 
@@ -85,29 +88,45 @@ class CatalogProcessor(
         val tried = mutableSetOf<Long>()
         while (true) {
             val id = dao.getCatalogable(MAX_ATTEMPTS).firstOrNull { it !in tried } ?: break
-            tried += id
-            if (!processOne(id)) break
+            if (!processOne(id, tried)) break
         }
         Log.i(TAG, "Run finished: ${tried.size} entries")
     }
 
     /** Returns false when the model cannot run, which ends the current run. */
-    private suspend fun processOne(id: Long): Boolean {
+    private suspend fun processOne(id: Long, tried: MutableSet<Long>): Boolean {
+        tried += id
         val entry = dao.getById(id) ?: return true
         if (entry.status == CatalogStatus.DONE) return true
 
         val startedAt = System.currentTimeMillis()
-        _current.value = CatalogJob(entryId = id, type = entry.type, startedAt = startedAt)
+        val job = CatalogJob(entryId = id, type = entry.type, startedAt = startedAt)
+        _current.value = job
         dao.markProcessing(id)
         Log.i(TAG, "Cataloging entry $id (type=${entry.type}, attempt=${entry.attempts + 1})")
 
         try {
+            // The photos of a post go first: the link's summary is written from what they show.
+            val photos = if (postPhotos.supports(entry)) postPhotos.expand(entry) else emptyList()
+            for (photo in photos) {
+                if (photo.id in tried || !photo.needsCatalog()) continue
+                if (!processOne(photo.id, tried)) {
+                    dao.requeue(id)
+                    return false
+                }
+                _current.value = job
+            }
+
             val cataloger = EntryCataloger(
                 modelManager = modelManager,
                 saveState = { dao.updateCatalogState(id, it) },
                 report = { step -> _current.value = _current.value?.copy(step = step) },
             )
-            val result = cataloger.catalog(entry)
+            val result = cataloger.catalog(
+                entry = entry,
+                parent = entry.parentId?.let { dao.getById(it) },
+                photos = if (photos.isEmpty()) photos else dao.getChildren(id),
+            )
             result.durationMs?.let { dao.updateDuration(id, it) }
             dao.saveCatalog(
                 id = id,
@@ -143,6 +162,9 @@ class CatalogProcessor(
             _current.value = null
         }
     }
+
+    private fun Entry.needsCatalog(): Boolean =
+        status == CatalogStatus.PENDING || (status == CatalogStatus.FAILED && attempts < MAX_ATTEMPTS)
 
     private fun record(
         entryId: Long,

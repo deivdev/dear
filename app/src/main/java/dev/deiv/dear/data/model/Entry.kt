@@ -1,6 +1,7 @@
 package dev.deiv.dear.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -14,7 +15,15 @@ enum class CatalogStatus {
 
 @Entity(
     tableName = "entries",
-    indices = [Index("createdAt"), Index("status")],
+    indices = [Index("createdAt"), Index("status"), Index("parentId")],
+    foreignKeys = [
+        ForeignKey(
+            entity = Entry::class,
+            parentColumns = ["id"],
+            childColumns = ["parentId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
 )
 data class Entry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -29,6 +38,8 @@ data class Entry(
     val sizeBytes: Long? = null,
     val originalName: String? = null,
     val sourceApp: String? = null,
+    /** The LINK entry this photo was pulled from, e.g. one photo of an Instagram post. */
+    val parentId: Long? = null,
     /** Length of audio and video, known once cataloged. */
     val durationMs: Long? = null,
 

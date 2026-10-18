@@ -106,7 +106,10 @@ class MainActivity : ComponentActivity() {
                             Routes.ENTRY,
                             arguments = listOf(navArgument(EntryViewModel.ARG_ID) { type = NavType.LongType }),
                         ) {
-                            EntryScreen(onBack = { navController.popBackStack() })
+                            EntryScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenEntry = { navController.navigate(Routes.entry(it)) },
+                            )
                         }
                         composable(Routes.SETTINGS) {
                             SettingsScreen(onBack = { navController.popBackStack() })

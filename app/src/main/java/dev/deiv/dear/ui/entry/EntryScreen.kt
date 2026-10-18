@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -41,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -67,12 +71,14 @@ import java.io.File
 @Composable
 fun EntryScreen(
     onBack: () -> Unit,
+    onOpenEntry: (Long) -> Unit,
     viewModel: EntryViewModel = viewModel(),
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
-    val item = (state as? EntryUiState.Loaded)?.item
+    val loaded = state as? EntryUiState.Loaded
+    val item = loaded?.item
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -102,8 +108,9 @@ fun EntryScreen(
                 modifier = Modifier.padding(20.dp),
             )
             is EntryUiState.Loaded -> EntryContent(
-                item = s.item,
+                state = s,
                 onOpen = { open(context, s.item.entry) },
+                onOpenEntry = onOpenEntry,
                 onRecatalog = viewModel::recatalog,
             )
         }
@@ -113,7 +120,13 @@ fun EntryScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text(stringResource(R.string.entry_delete_title)) },
-            text = { Text(stringResource(R.string.entry_delete_body)) },
+            text = {
+                val photos = loaded?.photos?.size ?: 0
+                Text(
+                    if (photos > 0) pluralStringResource(R.plurals.entry_delete_body_photos, photos, photos)
+                    else stringResource(R.string.entry_delete_body)
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
@@ -133,8 +146,14 @@ fun EntryScreen(
 }
 
 @Composable
-private fun EntryContent(item: EntryWithTags, onOpen: () -> Unit, onRecatalog: () -> Unit) {
+private fun EntryContent(
+    state: EntryUiState.Loaded,
+    onOpen: () -> Unit,
+    onOpenEntry: (Long) -> Unit,
+    onRecatalog: () -> Unit,
+) {
     val context = LocalContext.current
+    val item = state.item
     val entry = item.entry
 
     Column(
@@ -168,19 +187,7 @@ private fun EntryContent(item: EntryWithTags, onOpen: () -> Unit, onRecatalog: (
                         .clickable(onClick = onOpen),
                 )
             }
-            EntryType.LINK -> entry.url?.let { url ->
-                Surface(
-                    onClick = onOpen,
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        MonoLabel(domainOf(url), color = NothingRed)
-                        Text(url, style = MaterialTheme.typography.bodySmall, maxLines = 3)
-                    }
-                }
-            }
+            EntryType.LINK -> entry.url?.let { url -> LinkCard(url = url, text = url, onClick = onOpen) }
             EntryType.TEXT -> Unit
             EntryType.VIDEO -> entry.filePath?.let { path ->
                 VideoThumbnail(
@@ -203,6 +210,20 @@ private fun EntryContent(item: EntryWithTags, onOpen: () -> Unit, onRecatalog: (
                     modifier = Modifier.weight(1f),
                 )
                 PillButton(stringResource(R.string.entry_open), onClick = onOpen, outlined = true)
+            }
+        }
+
+        if (state.photos.isNotEmpty()) {
+            Section(stringResource(R.string.section_photos, state.photos.size)) {
+                PhotoStrip(state.photos, onOpenEntry)
+            }
+        }
+
+        state.parent?.let { link ->
+            link.url?.let { url ->
+                Section(stringResource(R.string.section_from_link)) {
+                    LinkCard(url = url, text = link.title ?: url, onClick = { onOpenEntry(link.id) })
+                }
             }
         }
 
@@ -243,6 +264,39 @@ private fun EntryContent(item: EntryWithTags, onOpen: () -> Unit, onRecatalog: (
         }
 
         CatalogSection(entry, onRecatalog)
+    }
+}
+
+@Composable
+private fun LinkCard(url: String, text: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            MonoLabel(domainOf(url), color = NothingRed)
+            Text(text, style = MaterialTheme.typography.bodySmall, maxLines = 3)
+        }
+    }
+}
+
+@Composable
+private fun PhotoStrip(photos: List<Entry>, onOpenEntry: (Long) -> Unit) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(photos, key = { it.id }) { photo ->
+            photo.filePath?.let { path ->
+                EntryImage(
+                    path = path,
+                    contentDescription = photo.title,
+                    modifier = Modifier
+                        .size(width = 120.dp, height = 150.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onOpenEntry(photo.id) },
+                )
+            }
+        }
     }
 }
 

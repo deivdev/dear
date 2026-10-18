@@ -25,10 +25,15 @@ class EntryRepository(
 
     fun observe(id: Long): Flow<EntryWithTags?> = dao.observeById(id)
 
-    /** Removes the entry and the file it owns in app storage. */
+    /** Photos pulled from link [id], in their original order. */
+    fun observePhotos(id: Long): Flow<List<Entry>> = dao.observeChildren(id)
+
+    /** Removes the entry and the file it owns in app storage, photos pulled from it included. */
     suspend fun delete(entry: Entry) = withContext(Dispatchers.IO) {
+        // The database drops the photos' rows with the link; their files are ours to delete.
+        val files = (dao.getChildren(entry.id) + entry).mapNotNull { it.filePath }
         dao.delete(entry)
-        entry.filePath?.let { File(it).delete() }
+        files.forEach { File(it).delete() }
     }
 
     suspend fun recatalog(id: Long) {
@@ -129,7 +134,7 @@ class EntryRepository(
     }
 
     private fun copyToInternal(resolver: ContentResolver, uri: Uri, ext: String?): File {
-        val dir = File(context.filesDir, "entries").apply { mkdirs() }
+        val dir = entriesDir(context)
         val name = buildString {
             append(UUID.randomUUID().toString())
             if (!ext.isNullOrEmpty()) {
@@ -201,6 +206,9 @@ class EntryRepository(
             .takeIf { it.isNotEmpty() }
 
     companion object {
+        /** Where entries' files live in app storage. */
+        fun entriesDir(context: Context): File = File(context.filesDir, "entries").apply { mkdirs() }
+
         private val URL_REGEX = Regex("""https?://[^\s<>"]+""", RegexOption.IGNORE_CASE)
         private val SPACE_BEFORE_PUNCT = Regex("""[ \t]+(?=[.,;:!?])""")
     }
