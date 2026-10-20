@@ -20,6 +20,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+sealed class ArchiveStatus {
+    data object Idle : ArchiveStatus()
+    data object Exporting : ArchiveStatus()
+    data object Importing : ArchiveStatus()
+    data class Exported(val count: Int) : ArchiveStatus()
+    data class Failed(val reason: String) : ArchiveStatus()
+}
+
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val app = application as DearApp
@@ -37,6 +45,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val history: StateFlow<List<JobRecord>> = app.catalogProcessor.history
     val pendingCount: StateFlow<Int> = app.catalogProcessor.pendingCount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    private val _archive = MutableStateFlow<ArchiveStatus>(ArchiveStatus.Idle)
+    val archive: StateFlow<ArchiveStatus> = _archive.asStateFlow()
 
     private var downloadIds: List<Long> = emptyList()
     private var observeJob: Job? = null
@@ -72,6 +83,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         app.modelDownloader.cancel(downloadIds)
         downloadIds = emptyList()
         _download.value = DownloadProgress.Idle
+    }
+
+    fun exportArchive(uri: Uri) {
+        _archive.value = ArchiveStatus.Exporting
+        viewModelScope.launch {
+            _archive.value = runCatching { app.archive.export(uri) }
+                .fold(onSuccess = { ArchiveStatus.Exported(it) }, onFailure = { ArchiveStatus.Failed(it.message ?: it.javaClass.simpleName) })
+        }
+    }
+
+    /** On success the app restarts, so only a failure ever comes back here. */
+    fun importArchive(uri: Uri) {
+        _archive.value = ArchiveStatus.Importing
+        viewModelScope.launch {
+            runCatching { app.archive.import(uri) }
+                .onFailure { _archive.value = ArchiveStatus.Failed(it.message ?: it.javaClass.simpleName) }
+        }
     }
 
     fun deleteCurrentModel() {

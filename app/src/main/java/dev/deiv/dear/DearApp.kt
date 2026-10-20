@@ -7,6 +7,7 @@ import coil3.SingletonImageLoader
 import coil3.video.VideoFrameDecoder
 import dev.deiv.dear.catalog.CatalogProcessor
 import dev.deiv.dear.catalog.CatalogWorker
+import dev.deiv.dear.data.backup.Archive
 import dev.deiv.dear.data.db.DearDatabase
 import dev.deiv.dear.data.repository.ChatRepository
 import dev.deiv.dear.data.repository.EntryRepository
@@ -38,6 +39,9 @@ class DearApp : Application(), SingletonImageLoader.Factory {
     lateinit var modelDownloader: ModelDownloader
         private set
 
+    lateinit var archive: Archive
+        private set
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
@@ -49,6 +53,7 @@ class DearApp : Application(), SingletonImageLoader.Factory {
         catalogProcessor = CatalogProcessor(this, dao, modelManager)
         entryRepository = EntryRepository(this, dao, requestCatalog = catalogProcessor::schedule)
         chatRepository = ChatRepository(db.chatDao())
+        archive = Archive(this, db)
         CatalogWorker.createNotificationChannel(this)
         catalogProcessor.scheduleWatchdog()
 

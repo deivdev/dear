@@ -1,5 +1,6 @@
 package dev.deiv.dear.ui.settings
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -14,16 +15,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -46,6 +52,7 @@ import dev.deiv.dear.ui.common.WorkingDots
 import dev.deiv.dear.ui.common.formatTime
 import dev.deiv.dear.ui.common.typeLabel
 import dev.deiv.dear.ui.theme.NothingRed
+import java.time.LocalDate
 
 @Composable
 fun SettingsScreen(
@@ -58,9 +65,17 @@ fun SettingsScreen(
     val current by viewModel.currentJob.collectAsState()
     val pending by viewModel.pendingCount.collectAsState()
     val history by viewModel.history.collectAsState()
+    val archive by viewModel.archive.collectAsState()
+    var pendingImport by remember { mutableStateOf<Uri?>(null) }
 
     val modelPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { viewModel.importModel(it) }
+    }
+    val exportPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(ZIP)) { uri ->
+        uri?.let { viewModel.exportArchive(it) }
+    }
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        pendingImport = uri
     }
 
     LaunchedEffect(modelState) {
@@ -139,12 +154,76 @@ fun SettingsScreen(
                 }
             }
 
+            Section(stringResource(R.string.section_archive)) {
+                ArchivePanel(
+                    status = archive,
+                    onExport = { exportPicker.launch("dear-${LocalDate.now()}.zip") },
+                    onImport = { importPicker.launch(arrayOf(ZIP, "application/x-zip-compressed", "application/octet-stream")) },
+                )
+            }
+
             Section(stringResource(R.string.section_about)) {
                 Panel {
                     Text(stringResource(R.string.about_body), style = MaterialTheme.typography.bodyMedium)
                     MonoLabel(stringResource(R.string.about_fonts))
                 }
             }
+        }
+    }
+
+    pendingImport?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingImport = null },
+            title = { Text(stringResource(R.string.archive_import_title)) },
+            text = { Text(stringResource(R.string.archive_import_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingImport = null
+                    viewModel.importArchive(uri)
+                }) {
+                    Text(stringResource(R.string.archive_import).uppercase(), color = NothingRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImport = null }) {
+                    Text(stringResource(R.string.action_cancel).uppercase())
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        )
+    }
+}
+
+private const val ZIP = "application/zip"
+
+@Composable
+private fun ArchivePanel(status: ArchiveStatus, onExport: () -> Unit, onImport: () -> Unit) {
+    Panel {
+        Text(
+            stringResource(R.string.archive_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        when (status) {
+            ArchiveStatus.Exporting, ArchiveStatus.Importing -> Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                WorkingDots()
+                MonoLabel(
+                    stringResource(
+                        if (status == ArchiveStatus.Exporting) R.string.archive_exporting else R.string.archive_importing
+                    )
+                )
+            }
+            is ArchiveStatus.Exported -> MonoLabel(pluralStringResource(R.plurals.archive_exported, status.count, status.count))
+            is ArchiveStatus.Failed -> MonoLabel(stringResource(R.string.archive_failed, status.reason), color = NothingRed)
+            ArchiveStatus.Idle -> Unit
+        }
+        val busy = status == ArchiveStatus.Exporting || status == ArchiveStatus.Importing
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+            PillButton(stringResource(R.string.archive_export), onClick = onExport, enabled = !busy)
+            PillButton(stringResource(R.string.archive_import), onClick = onImport, outlined = true, enabled = !busy)
         }
     }
 }

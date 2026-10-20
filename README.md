@@ -32,6 +32,8 @@ The model runs on the phone; nothing goes to a cloud.
   text, and filters by type.
 - **Ask** — chat with your collection ("what was that link about slow living?", "what did I save
   this week?"). Answers cite the entries they come from, and the citations open them.
+- **Archive** — export the whole collection (entries, files, chats) to a single .zip from Settings,
+  and import it back on another install or another phone. Models are not included.
 
 The interface is in Italian.
 
@@ -62,7 +64,7 @@ Everything else — notes, shared media, cataloging, search, chat — works offl
 ## Status
 
 Early (0.1). Working: share capture, multimodal cataloging, collection with keyword search, ask
-with citations. Planned: semantic search with an embedding model, export/import of the archive,
+with citations, export/import of the archive. Planned: semantic search with an embedding model,
 videos and reels from Instagram.
 
 ## Stack
@@ -91,6 +93,7 @@ app/src/main/java/dev/deiv/dear/
 ├── media/                     # Audio decoding, video frame extraction
 ├── net/                       # Link metadata, Instagram embed reader
 ├── data/
+│   ├── backup/                # Archive: export/import of the collection as a zip
 │   ├── db/                    # Room database and DAOs
 │   ├── model/                 # Entry, Tag, chat sessions
 │   └── repository/            # EntryRepository, ChatRepository, keyword matching

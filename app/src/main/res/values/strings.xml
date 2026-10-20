@@ -20,6 +20,10 @@
     <string name="filter_video">Video</string>
     <string name="filter_audio">Audio</string>
     <string name="filter_file">File</string>
+    <plurals name="archive_exported">
+        <item quantity="one">Esportato %d elemento</item>
+        <item quantity="other">Esportati %d elementi</item>
+    </plurals>
     <plurals name="catalog_pending">
         <item quantity="one">Catalogo · 1 in coda</item>
         <item quantity="other">Catalogo · %d in coda</item>
@@ -88,6 +92,15 @@
     <string name="section_model">Modello</string>
     <string name="section_catalog_activity">Attività del catalogo</string>
     <string name="section_about">Info</string>
+    <string name="section_archive">Archivio</string>
+    <string name="archive_body">Esporta elementi, file e chat in un unico .zip, come backup o per passare a un altro telefono. Il modello non è incluso.</string>
+    <string name="archive_export">Esporta</string>
+    <string name="archive_import">Importa</string>
+    <string name="archive_exporting">Esportazione in corso…</string>
+    <string name="archive_importing">Importazione in corso…</string>
+    <string name="archive_failed">Non riuscito: %1$s</string>
+    <string name="archive_import_title">Sostituire la collezione?</string>
+    <string name="archive_import_body">Gli elementi e le chat attuali vengono sostituiti da quelli dell\'archivio, poi l\'app si riavvia.</string>
     <string name="model_loaded">Caricato in memoria</string>
     <string name="model_idle">Installato · si carica quando serve</string>
     <string name="model_multimodal">Testo, immagini e audio</string>
