@@ -133,7 +133,7 @@
     <string name="step_summary">summary</string>
     <string name="catalog_history_empty">No activity in this session</string>
     <string name="about_body">Everything stays on the phone: no cloud, no telemetry. Only saved links are opened over the network, to read their title.</string>
-    <string name="about_fonts">Fonts: Doto, Space Grotesk, Space Mono · SIL Open Font License</string>
+    <string name="about_fonts">Fonts: Instrument Serif, Space Grotesk, Space Mono · SIL Open Font License</string>
 
     <!-- Share -->
     <plurals name="share_saved">

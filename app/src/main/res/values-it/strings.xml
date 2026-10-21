@@ -136,7 +136,7 @@
     <string name="step_summary">riepilogo</string>
     <string name="catalog_history_empty">Nessuna attività in questa sessione</string>
     <string name="about_body">Tutto resta sul telefono: nessun cloud, nessuna telemetria. Solo i link salvati vengono aperti in rete per leggerne il titolo.</string>
-    <string name="about_fonts">Font: Doto, Space Grotesk, Space Mono · SIL Open Font License</string>
+    <string name="about_fonts">Font: Instrument Serif, Space Grotesk, Space Mono · SIL Open Font License</string>
 
     <!-- Share -->
     <plurals name="share_saved">

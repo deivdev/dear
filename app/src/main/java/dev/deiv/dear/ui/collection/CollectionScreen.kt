@@ -75,7 +75,6 @@ import dev.deiv.dear.ui.common.formatDuration
 import dev.deiv.dear.ui.common.formatTime
 import dev.deiv.dear.ui.common.localDate
 import dev.deiv.dear.ui.common.typeLabel
-import dev.deiv.dear.ui.theme.NothingRed
 
 @Composable
 fun CollectionScreen(
@@ -162,7 +161,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
-            cursorColor = NothingRed,
+            cursorColor = MaterialTheme.colorScheme.tertiary,
         ),
     )
 }
@@ -369,7 +368,7 @@ private fun EmptyState() {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = stringResource(R.string.empty_title).uppercase(),
+            text = stringResource(R.string.empty_title),
             style = MaterialTheme.typography.displayMedium,
             color = MaterialTheme.colorScheme.outline,
         )
@@ -387,14 +386,14 @@ private fun AddButton(onClick: () -> Unit) {
         modifier = Modifier
             .size(64.dp)
             .clip(CircleShape)
-            .background(NothingRed)
+            .background(MaterialTheme.colorScheme.tertiary)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             Icons.Default.Add,
             contentDescription = stringResource(R.string.action_new),
-            tint = Color.White,
+            tint = MaterialTheme.colorScheme.onTertiary,
             modifier = Modifier.size(28.dp),
         )
     }
@@ -419,7 +418,7 @@ private fun CaptureSheet(onDismiss: () -> Unit, onSave: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = stringResource(R.string.capture_title).uppercase(),
+                text = stringResource(R.string.capture_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
             TextField(
@@ -436,7 +435,7 @@ private fun CaptureSheet(onDismiss: () -> Unit, onSave: (String) -> Unit) {
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = NothingRed,
+                    cursorColor = MaterialTheme.colorScheme.tertiary,
                 ),
             )
             Row(modifier = Modifier.fillMaxWidth()) {

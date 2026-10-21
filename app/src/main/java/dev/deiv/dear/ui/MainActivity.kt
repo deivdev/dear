@@ -47,7 +47,6 @@ import dev.deiv.dear.ui.entry.EntryScreen
 import dev.deiv.dear.ui.entry.EntryViewModel
 import dev.deiv.dear.ui.settings.SettingsScreen
 import dev.deiv.dear.ui.theme.DearTheme
-import dev.deiv.dear.ui.theme.NothingRed
 
 private object Routes {
     const val COLLECTION = "collection"
@@ -135,7 +134,7 @@ private fun NavHostController.navigateTopLevel(route: String) {
     }
 }
 
-/** "DEAR" and the settings gear, identical and in the same place on every top-level page. */
+/** "Dear" and the settings gear, identical and in the same place on every top-level page. */
 @Composable
 private fun TopBar(onOpenSettings: () -> Unit) {
     ScreenHeader(
@@ -150,7 +149,7 @@ private fun TopBar(onOpenSettings: () -> Unit) {
     }
 }
 
-/** Two text tabs in mono caps; the active one carries a red dot. */
+/** Two text tabs in mono caps; the active one carries an accent dot. */
 @Composable
 private fun BottomBar(current: String?, onSelect: (String) -> Unit) {
     Column(modifier = Modifier.navigationBarsPadding()) {
@@ -176,7 +175,7 @@ private fun BottomTab(label: String, selected: Boolean, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Dot(if (selected) NothingRed else Color.Transparent)
+        Dot(if (selected) MaterialTheme.colorScheme.tertiary else Color.Transparent)
         Text(
             text = label.uppercase(),
             style = MaterialTheme.typography.labelLarge,

@@ -65,7 +65,6 @@ import dev.deiv.dear.ui.common.domainOf
 import dev.deiv.dear.ui.common.formatDateTime
 import dev.deiv.dear.ui.common.formatDuration
 import dev.deiv.dear.ui.common.typeLabel
-import dev.deiv.dear.ui.theme.NothingRed
 import java.io.File
 
 @Composable
@@ -132,7 +131,7 @@ fun EntryScreen(
                     confirmDelete = false
                     viewModel.delete(onDeleted = onBack)
                 }) {
-                    Text(stringResource(R.string.entry_delete).uppercase(), color = NothingRed)
+                    Text(stringResource(R.string.entry_delete).uppercase(), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -277,7 +276,7 @@ private fun LinkCard(url: String, text: String, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            MonoLabel(domainOf(url), color = NothingRed)
+            MonoLabel(domainOf(url), color = MaterialTheme.colorScheme.tertiary)
             Text(text, style = MaterialTheme.typography.bodySmall, maxLines = 3)
         }
     }
@@ -337,7 +336,7 @@ private fun CatalogSection(entry: Entry, onRecatalog: () -> Unit) {
             CatalogStatus.FAILED -> Text(
                 stringResource(R.string.catalog_failed, entry.attempts, entry.lastError ?: "—"),
                 style = MaterialTheme.typography.bodySmall,
-                color = NothingRed,
+                color = MaterialTheme.colorScheme.error,
             )
         }
         if (entry.status == CatalogStatus.DONE || entry.status == CatalogStatus.FAILED) {

@@ -62,7 +62,6 @@ import dev.deiv.dear.ui.common.WorkingDots
 import dev.deiv.dear.ui.common.domainOf
 import dev.deiv.dear.ui.common.formatDateTime
 import dev.deiv.dear.ui.common.typeLabel
-import dev.deiv.dear.ui.theme.NothingRed
 
 @Composable
 fun AskScreen(
@@ -183,7 +182,7 @@ private fun ModelStatusLine(status: ModelStatus, onOpenSettings: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                MonoLabel(stringResource(R.string.model_missing_title), color = NothingRed)
+                MonoLabel(stringResource(R.string.model_missing_title), color = MaterialTheme.colorScheme.tertiary)
                 Text(stringResource(R.string.model_missing_body), style = MaterialTheme.typography.bodyMedium)
                 PillButton(stringResource(R.string.open_settings), onClick = onOpenSettings)
             }
@@ -198,8 +197,8 @@ private fun ModelStatusLine(status: ModelStatus, onOpenSettings: () -> Unit) {
     ) {
         when (status.state) {
             ModelState.LOADING -> WorkingDots(dotSize = 4.dp)
-            ModelState.READY -> Dot(NothingRed, size = 5.dp)
-            ModelState.ERROR -> Dot(NothingRed, size = 5.dp)
+            ModelState.READY -> Dot(MaterialTheme.colorScheme.tertiary, size = 5.dp)
+            ModelState.ERROR -> Dot(MaterialTheme.colorScheme.error, size = 5.dp)
             else -> Dot(MaterialTheme.colorScheme.onSurfaceVariant, size = 5.dp)
         }
         val text = when (status.state) {
@@ -208,7 +207,7 @@ private fun ModelStatusLine(status: ModelStatus, onOpenSettings: () -> Unit) {
             else -> status.tokensPerSec?.let { stringResource(R.string.model_status_speed, name, it) }
                 ?: stringResource(R.string.model_status_idle, name)
         }
-        MonoLabel(text, color = if (status.state == ModelState.ERROR) NothingRed else MaterialTheme.colorScheme.onSurfaceVariant)
+        MonoLabel(text, color = if (status.state == ModelState.ERROR) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -237,7 +236,7 @@ private fun DearReply(
     onOpenEntry: (Long) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        MonoLabel(stringResource(R.string.app_name), color = NothingRed)
+        MonoLabel(stringResource(R.string.app_name), color = MaterialTheme.colorScheme.tertiary)
         if (text.isEmpty() && streaming) {
             WorkingDots(modifier = Modifier.padding(vertical = 6.dp))
         } else {
@@ -245,7 +244,7 @@ private fun DearReply(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (isError) NothingRed else MaterialTheme.colorScheme.onBackground,
+                    color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,
                 )
             }
         }
@@ -324,7 +323,7 @@ private fun InputBar(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
-                cursorColor = NothingRed,
+                cursorColor = MaterialTheme.colorScheme.tertiary,
             ),
         )
         val canSend = enabled && value.isNotBlank()
@@ -332,14 +331,14 @@ private fun InputBar(
             modifier = Modifier
                 .size(52.dp)
                 .clip(CircleShape)
-                .background(if (generating || canSend) NothingRed else MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(if (generating || canSend) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable(enabled = generating || canSend, onClick = if (generating) onStop else onSend),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = if (generating) Icons.Default.Close else Icons.AutoMirrored.Filled.Send,
                 contentDescription = stringResource(R.string.ask_send),
-                tint = if (generating || canSend) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (generating || canSend) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -360,7 +359,7 @@ private fun SessionsSheet(
     ) {
         Column(modifier = Modifier.padding(start = 20.dp, end = 8.dp, bottom = 24.dp)) {
             Text(
-                text = stringResource(R.string.ask_sessions).uppercase(),
+                text = stringResource(R.string.ask_sessions),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
@@ -378,7 +377,7 @@ private fun SessionsSheet(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Dot(if (session.id == currentId) NothingRed else Color.Transparent)
+                        Dot(if (session.id == currentId) MaterialTheme.colorScheme.tertiary else Color.Transparent)
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
                                 session.title,

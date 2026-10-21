@@ -10,8 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-/** The one accent colour: everything else is black, white and greys. */
-val NothingRed = Color(0xFFD71921)
+// One warm accent (tertiary) on black, white and greys; red is kept for errors and deletions.
+private val AmberDark = Color(0xFFF2A93B)
+private val AmberLight = Color(0xFF9A5B00)
+private val ErrorDark = Color(0xFFE5484D)
+private val ErrorLight = Color(0xFFCE2C31)
 
 private val DarkColors = darkColorScheme(
     primary = Color(0xFFF2F2F2),
@@ -20,8 +23,8 @@ private val DarkColors = darkColorScheme(
     onPrimaryContainer = Color(0xFFF2F2F2),
     secondary = Color(0xFF8C8C8C),
     onSecondary = Color(0xFF000000),
-    tertiary = NothingRed,
-    onTertiary = Color(0xFFFFFFFF),
+    tertiary = AmberDark,
+    onTertiary = Color(0xFF1A1100),
     background = Color(0xFF000000),
     onBackground = Color(0xFFF2F2F2),
     surface = Color(0xFF000000),
@@ -35,7 +38,7 @@ private val DarkColors = darkColorScheme(
     surfaceContainerHighest = Color(0xFF222222),
     outline = Color(0xFF333333),
     outlineVariant = Color(0xFF222222),
-    error = NothingRed,
+    error = ErrorDark,
     onError = Color(0xFFFFFFFF),
 )
 
@@ -46,7 +49,7 @@ private val LightColors = lightColorScheme(
     onPrimaryContainer = Color(0xFF0D0D0D),
     secondary = Color(0xFF6B6B6B),
     onSecondary = Color(0xFFFFFFFF),
-    tertiary = NothingRed,
+    tertiary = AmberLight,
     onTertiary = Color(0xFFFFFFFF),
     background = Color(0xFFF2F2F2),
     onBackground = Color(0xFF0D0D0D),
@@ -61,7 +64,7 @@ private val LightColors = lightColorScheme(
     surfaceContainerHighest = Color(0xFFE3E3E3),
     outline = Color(0xFFCFCFCF),
     outlineVariant = Color(0xFFE0E0E0),
-    error = NothingRed,
+    error = ErrorLight,
     onError = Color(0xFFFFFFFF),
 )
 

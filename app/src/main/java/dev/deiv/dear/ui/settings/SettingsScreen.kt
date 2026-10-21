@@ -52,7 +52,6 @@ import dev.deiv.dear.ui.common.PillButton
 import dev.deiv.dear.ui.common.WorkingDots
 import dev.deiv.dear.ui.common.formatTime
 import dev.deiv.dear.ui.common.typeLabel
-import dev.deiv.dear.ui.theme.NothingRed
 import java.time.LocalDate
 
 @Composable
@@ -94,7 +93,7 @@ fun SettingsScreen(
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
         }
         Text(
-            text = stringResource(R.string.action_settings).uppercase(),
+            text = stringResource(R.string.action_settings),
             modifier = Modifier.padding(horizontal = 20.dp),
             style = MaterialTheme.typography.displaySmall,
         )
@@ -113,7 +112,7 @@ fun SettingsScreen(
                         )
                     }
                     ModelState.ERROR -> Panel {
-                        MonoLabel(stringResource(R.string.model_error), color = NothingRed)
+                        MonoLabel(stringResource(R.string.model_error), color = MaterialTheme.colorScheme.error)
                         viewModel.lastError()?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                         PillButton(stringResource(R.string.model_delete), onClick = viewModel::deleteCurrentModel, outlined = true)
                     }
@@ -184,7 +183,7 @@ fun SettingsScreen(
                     pendingImport = null
                     viewModel.importArchive(uri)
                 }) {
-                    Text(stringResource(R.string.archive_import).uppercase(), color = NothingRed)
+                    Text(stringResource(R.string.archive_import).uppercase(), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -220,7 +219,7 @@ private fun ArchivePanel(status: ArchiveStatus, onExport: () -> Unit, onImport: 
                 )
             }
             is ArchiveStatus.Exported -> MonoLabel(pluralStringResource(R.plurals.archive_exported, status.count, status.count))
-            is ArchiveStatus.Failed -> MonoLabel(stringResource(R.string.archive_failed, status.reason), color = NothingRed)
+            is ArchiveStatus.Failed -> MonoLabel(stringResource(R.string.archive_failed, status.reason), color = MaterialTheme.colorScheme.error)
             ArchiveStatus.Idle -> Unit
         }
         val busy = status == ArchiveStatus.Exporting || status == ArchiveStatus.Importing
@@ -267,7 +266,7 @@ private fun ModelCard(stats: ModelStats, state: ModelState, onDelete: () -> Unit
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             when (state) {
                 ModelState.LOADING -> WorkingDots(dotSize = 5.dp)
-                ModelState.READY -> Dot(NothingRed)
+                ModelState.READY -> Dot(MaterialTheme.colorScheme.tertiary)
                 else -> Dot(MaterialTheme.colorScheme.onSurfaceVariant)
             }
             MonoLabel(
@@ -327,14 +326,14 @@ private fun InstallPanel(
                 LinearProgressIndicator(
                     progress = { fraction.coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth(),
-                    color = NothingRed,
+                    color = MaterialTheme.colorScheme.tertiary,
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 )
                 PillButton(stringResource(R.string.action_cancel), onClick = onCancel, outlined = true)
             }
             else -> {
                 if (download is DownloadProgress.Failed) {
-                    MonoLabel(stringResource(R.string.download_failed, download.reason), color = NothingRed)
+                    MonoLabel(stringResource(R.string.download_failed, download.reason), color = MaterialTheme.colorScheme.error)
                 }
                 ModelCatalog.models.forEach { model -> CatalogRow(model, onDownload) }
             }
@@ -353,9 +352,9 @@ private fun InstallPanel(
             }
             is ModelImport.Rejected -> MonoLabel(
                 stringResource(R.string.import_gguf_rejected, modelImport.fileName ?: "?"),
-                color = NothingRed,
+                color = MaterialTheme.colorScheme.error,
             )
-            is ModelImport.Failed -> MonoLabel(stringResource(R.string.import_gguf_failed, modelImport.reason), color = NothingRed)
+            is ModelImport.Failed -> MonoLabel(stringResource(R.string.import_gguf_failed, modelImport.reason), color = MaterialTheme.colorScheme.error)
             ModelImport.Idle -> Unit
         }
         PillButton(
@@ -399,7 +398,7 @@ private fun JobRow(rec: JobRecord) {
         Dot(
             color = when (rec.status) {
                 JobStatus.SUCCESS -> MaterialTheme.colorScheme.onSurface
-                JobStatus.FAILED -> NothingRed
+                JobStatus.FAILED -> MaterialTheme.colorScheme.error
                 JobStatus.SKIPPED -> MaterialTheme.colorScheme.onSurfaceVariant
             },
             modifier = Modifier.padding(top = 5.dp),

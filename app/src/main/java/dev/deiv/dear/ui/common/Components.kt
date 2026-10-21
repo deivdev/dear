@@ -40,7 +40,6 @@ import coil3.video.videoFrameMillis
 import dev.deiv.dear.R
 import dev.deiv.dear.data.model.CatalogStatus
 import dev.deiv.dear.data.model.EntryType
-import dev.deiv.dear.ui.theme.NothingRed
 import java.io.File
 
 /** Dot-matrix page title with optional icon actions on the right; the same on every top-level page. */
@@ -57,7 +56,7 @@ fun ScreenHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = title.uppercase(),
+            text = title,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground,
@@ -66,7 +65,7 @@ fun ScreenHeader(
     }
 }
 
-/** Small uppercase mono label, the Nothing way of naming things. */
+/** Small uppercase mono label, for metadata and section names. */
 @Composable
 fun MonoLabel(
     text: String,
@@ -88,7 +87,7 @@ fun MonoLabel(
 @Composable
 fun WorkingDots(
     modifier: Modifier = Modifier,
-    color: Color = NothingRed,
+    color: Color = MaterialTheme.colorScheme.tertiary,
     dotSize: Dp = 6.dp,
 ) {
     val transition = rememberInfiniteTransition(label = "dots")
@@ -162,7 +161,7 @@ fun CatalogStatusLabel(status: CatalogStatus, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             WorkingDots(dotSize = 4.dp)
-            MonoLabel(stringResource(R.string.status_processing), color = NothingRed)
+            MonoLabel(stringResource(R.string.status_processing), color = MaterialTheme.colorScheme.tertiary)
         }
         CatalogStatus.PENDING -> Row(
             modifier = modifier,
@@ -177,8 +176,8 @@ fun CatalogStatusLabel(status: CatalogStatus, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Dot(NothingRed, size = 4.dp)
-            MonoLabel(stringResource(R.string.status_failed), color = NothingRed)
+            Dot(MaterialTheme.colorScheme.error, size = 4.dp)
+            MonoLabel(stringResource(R.string.status_failed), color = MaterialTheme.colorScheme.error)
         }
     }
 }
@@ -195,7 +194,7 @@ fun typeLabel(type: EntryType): String = stringResource(
     }
 )
 
-/** Rounded pill button with a mono uppercase label: filled (or red when [accent]) or outlined. */
+/** Rounded pill button with a mono uppercase label: filled (or amber when [accent]) or outlined. */
 @Composable
 fun PillButton(
     text: String,
@@ -208,7 +207,7 @@ fun PillButton(
     val colors = MaterialTheme.colorScheme
     val (container, content) = when {
         outlined -> Color.Transparent to colors.onSurface
-        accent -> NothingRed to Color.White
+        accent -> colors.tertiary to colors.onTertiary
         else -> colors.primary to colors.onPrimary
     }
     Box(

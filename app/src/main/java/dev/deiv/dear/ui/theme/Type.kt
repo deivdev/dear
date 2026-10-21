@@ -10,17 +10,8 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import dev.deiv.dear.R
 
-/** Dot-matrix display face (Doto, OFL) with round dots, Nothing style. Headings only. */
-val DotFamily = FontFamily(
-    Font(
-        R.font.doto,
-        weight = FontWeight.Bold,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(800),
-            FontVariation.Setting("ROND", 100f),
-        ),
-    ),
-)
+/** Display serif (Instrument Serif, OFL): headings and the app name. One weight, set large. */
+val SerifFamily = FontFamily(Font(R.font.instrument_serif, FontWeight.Normal))
 
 /** Body text (Space Grotesk, OFL). */
 val GroteskFamily = FontFamily(
@@ -36,17 +27,17 @@ val MonoFamily = FontFamily(
     Font(R.font.space_mono_bold, FontWeight.Bold),
 )
 
-private val dot = TextStyle(fontFamily = DotFamily, fontWeight = FontWeight.Bold)
+private val serif = TextStyle(fontFamily = SerifFamily, fontWeight = FontWeight.Normal)
 private val grotesk = TextStyle(fontFamily = GroteskFamily)
 private val mono = TextStyle(fontFamily = MonoFamily, letterSpacing = 0.08.em)
 
 val DearTypography = Typography(
-    displayLarge = dot.copy(fontSize = 56.sp, lineHeight = 60.sp),
-    displayMedium = dot.copy(fontSize = 44.sp, lineHeight = 48.sp),
-    displaySmall = dot.copy(fontSize = 36.sp, lineHeight = 40.sp),
-    headlineLarge = dot.copy(fontSize = 32.sp, lineHeight = 36.sp),
-    headlineMedium = dot.copy(fontSize = 28.sp, lineHeight = 32.sp),
-    headlineSmall = dot.copy(fontSize = 24.sp, lineHeight = 28.sp),
+    displayLarge = serif.copy(fontSize = 60.sp, lineHeight = 64.sp),
+    displayMedium = serif.copy(fontSize = 48.sp, lineHeight = 52.sp),
+    displaySmall = serif.copy(fontSize = 40.sp, lineHeight = 44.sp),
+    headlineLarge = serif.copy(fontSize = 32.sp, lineHeight = 36.sp),
+    headlineMedium = serif.copy(fontSize = 28.sp, lineHeight = 32.sp),
+    headlineSmall = serif.copy(fontSize = 28.sp, lineHeight = 32.sp),
     titleLarge = grotesk.copy(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold),
     titleMedium = grotesk.copy(fontSize = 17.sp, lineHeight = 23.sp, fontWeight = FontWeight.SemiBold),
     titleSmall = grotesk.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
