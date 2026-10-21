@@ -10,10 +10,11 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val timeFormat = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
-private val dayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.getDefault())
-private val dayYearFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault())
-private val fullFormat = DateTimeFormatter.ofPattern("d MMMM yyyy · HH:mm", Locale.getDefault())
+// Built on each use: the app language can change while the process lives.
+private val timeFormat: DateTimeFormatter get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+private val dayFormat: DateTimeFormatter get() = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.getDefault())
+private val dayYearFormat: DateTimeFormatter get() = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault())
+private val fullFormat: DateTimeFormatter get() = DateTimeFormatter.ofPattern("d MMMM yyyy · HH:mm", Locale.getDefault())
 
 fun localDate(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
 

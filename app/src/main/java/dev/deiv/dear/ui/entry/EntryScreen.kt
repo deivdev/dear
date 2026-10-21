@@ -165,11 +165,12 @@ private fun EntryContent(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             MonoLabel(typeLabel(entry.type))
+            val fromApp = entry.sourceApp?.let { stringResource(R.string.from_app, appLabel(context, it)) }
             MonoLabel(
                 buildString {
                     append(formatDateTime(entry.createdAt))
                     entry.durationMs?.let { append(" · ").append(formatDuration(it)) }
-                    entry.sourceApp?.let { append(" · ").append(context.getString(R.string.from_app, appLabel(context, it))) }
+                    fromApp?.let { append(" · ").append(it) }
                 }
             )
         }

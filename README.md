@@ -35,7 +35,8 @@ The model runs on the phone; nothing goes to a cloud.
 - **Archive** — export the whole collection (entries, files, chats) to a single .zip from Settings,
   and import it back on another install or another phone. Models are not included.
 
-The interface is in Italian.
+The interface is in English and Italian, following the phone's language (or the per-app language in
+Android settings), and entries are cataloged in the same language.
 
 ## Models
 
