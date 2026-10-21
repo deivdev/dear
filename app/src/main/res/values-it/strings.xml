@@ -20,6 +20,12 @@
     <string name="filter_video">Video</string>
     <string name="filter_audio">Audio</string>
     <string name="filter_file">File</string>
+    <string name="type_image">Foto</string>
+    <string name="type_link">Link</string>
+    <string name="type_text">Nota</string>
+    <string name="type_video">Video</string>
+    <string name="type_audio">Audio</string>
+    <string name="type_file">File</string>
     <plurals name="archive_exported">
         <item quantity="one">Esportato %d elemento</item>
         <item quantity="many">Esportati %d elementi</item>

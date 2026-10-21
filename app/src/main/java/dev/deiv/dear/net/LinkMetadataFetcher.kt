@@ -21,6 +21,7 @@ object LinkMetadataFetcher {
     private const val USER_AGENT = "Mozilla/5.0 (Linux; Android) Dear/1.0"
     private const val MAX_BYTES = 256 * 1024 // 256KB cap
     private const val TIMEOUT_MS = 8000
+    private val NUMERIC_ENTITY = Regex("&#([xX]?)([0-9a-fA-F]+);")
 
     suspend fun fetch(url: String): LinkMetadata? = withContext(Dispatchers.IO) {
         // Try oEmbed first for known providers (no HTML scrape needed)
@@ -115,14 +116,23 @@ object LinkMetadataFetcher {
         return r.find(html)?.groupValues?.get(1)
     }
 
+    /** Named entities common in meta tags, and numeric ones ("&#x201C;", "&#8217;") of any kind. */
     private fun decodeEntities(s: String): String = s
-        .replace("&amp;", "&")
+        .replace(NUMERIC_ENTITY) { m ->
+            val (hex, digits) = m.destructured
+            digits.toIntOrNull(if (hex.isEmpty()) 10 else 16)
+                ?.takeIf { Character.isValidCodePoint(it) }
+                ?.let { String(Character.toChars(it)) }
+                ?: m.value
+        }
         .replace("&quot;", "\"")
         .replace("&#39;", "'")
         .replace("&apos;", "'")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
         .replace("&nbsp;", " ")
+        // Last, so "&amp;lt;" stays "&lt;" as written.
+        .replace("&amp;", "&")
         .trim()
 
     private fun oembedFor(url: String): LinkMetadata? {

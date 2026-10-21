@@ -20,6 +20,12 @@
     <string name="filter_video">Videos</string>
     <string name="filter_audio">Audio</string>
     <string name="filter_file">Files</string>
+    <string name="type_image">Photo</string>
+    <string name="type_link">Link</string>
+    <string name="type_text">Note</string>
+    <string name="type_video">Video</string>
+    <string name="type_audio">Audio</string>
+    <string name="type_file">File</string>
     <plurals name="archive_exported">
         <item quantity="one">Exported %d entry</item>
         <item quantity="other">Exported %d entries</item>

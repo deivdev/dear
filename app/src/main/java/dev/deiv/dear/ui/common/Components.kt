@@ -186,12 +186,12 @@ fun CatalogStatusLabel(status: CatalogStatus, modifier: Modifier = Modifier) {
 @Composable
 fun typeLabel(type: EntryType): String = stringResource(
     when (type) {
-        EntryType.IMAGE -> R.string.filter_image
-        EntryType.LINK -> R.string.filter_link
-        EntryType.TEXT -> R.string.filter_text
-        EntryType.VIDEO -> R.string.filter_video
-        EntryType.AUDIO -> R.string.filter_audio
-        EntryType.FILE -> R.string.filter_file
+        EntryType.IMAGE -> R.string.type_image
+        EntryType.LINK -> R.string.type_link
+        EntryType.TEXT -> R.string.type_text
+        EntryType.VIDEO -> R.string.type_video
+        EntryType.AUDIO -> R.string.type_audio
+        EntryType.FILE -> R.string.type_file
     }
 )
 

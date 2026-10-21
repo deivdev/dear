@@ -198,8 +198,17 @@ private fun FilterRow(selected: TypeFilter, available: Set<EntryType>, onSelect:
 }
 
 @Composable
-private fun filterLabel(filter: TypeFilter): String =
-    filter.type?.let { typeLabel(it) } ?: stringResource(R.string.filter_all)
+private fun filterLabel(filter: TypeFilter): String = stringResource(
+    when (filter.type) {
+        null -> R.string.filter_all
+        EntryType.IMAGE -> R.string.filter_image
+        EntryType.LINK -> R.string.filter_link
+        EntryType.TEXT -> R.string.filter_text
+        EntryType.VIDEO -> R.string.filter_video
+        EntryType.AUDIO -> R.string.filter_audio
+        EntryType.FILE -> R.string.filter_file
+    }
+)
 
 @Composable
 private fun CatalogBanner(pending: Int) {
