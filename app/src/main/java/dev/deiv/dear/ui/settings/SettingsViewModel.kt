@@ -9,6 +9,7 @@ import dev.deiv.dear.catalog.CatalogJob
 import dev.deiv.dear.catalog.JobRecord
 import dev.deiv.dear.llm.CatalogModel
 import dev.deiv.dear.llm.DownloadProgress
+import dev.deiv.dear.llm.ModelImport
 import dev.deiv.dear.llm.ModelState
 import dev.deiv.dear.llm.ModelStats
 import dev.deiv.dear.llm.ModelStatsCollector
@@ -46,6 +47,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val pendingCount: StateFlow<Int> = app.catalogProcessor.pendingCount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    private val _modelImport = MutableStateFlow<ModelImport>(ModelImport.Idle)
+    val modelImport: StateFlow<ModelImport> = _modelImport.asStateFlow()
+
     private val _archive = MutableStateFlow<ArchiveStatus>(ArchiveStatus.Idle)
     val archive: StateFlow<ArchiveStatus> = _archive.asStateFlow()
 
@@ -59,8 +63,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun lastError(): String? = app.modelManager.lastError
 
     fun importModel(uri: Uri) {
+        _modelImport.value = ModelImport.Running
         viewModelScope.launch {
-            app.modelManager.importModel(uri)
+            _modelImport.value = app.modelManager.importModel(uri)
             refreshStats()
         }
     }

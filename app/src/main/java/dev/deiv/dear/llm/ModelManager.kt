@@ -23,6 +23,16 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
+sealed class ModelImport {
+    object Idle : ModelImport()
+    object Running : ModelImport()
+    /** [missing] is the other file of the pair (weights or projector) still to import, if any. */
+    data class Imported(val fileName: String, val missing: String?) : ModelImport()
+    /** Not a file of [ModelCatalog], or renamed: only the catalog's files are accepted. */
+    data class Rejected(val fileName: String?) : ModelImport()
+    data class Failed(val reason: String) : ModelImport()
+}
+
 enum class ModelState {
     /** No model file on disk. */
     NOT_INSTALLED,
@@ -129,21 +139,30 @@ class ModelManager(
         }
     }
 
-    suspend fun importModel(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+    /**
+     * Copies a picked GGUF in. Only the files of [ModelCatalog], under their original names, are
+     * accepted: that is how a model finds its projector.
+     */
+    suspend fun importModel(uri: Uri): ModelImport = withContext(Dispatchers.IO) {
+        val name = displayName(uri)
+        val model = name?.let { ModelCatalog.byFileName(it) } ?: return@withContext ModelImport.Rejected(name)
+        val dest = File(modelDir, name)
+        val partial = File(modelDir, "$name.part")
         try {
-            val name = displayName(uri)?.takeIf { it.endsWith(".gguf") } ?: "imported-${System.currentTimeMillis()}.gguf"
-            val dest = File(modelDir, name)
+            // Copied under a temporary name, so a half-copied file is never taken for a model.
             context.contentResolver.openInputStream(uri)?.use { input ->
-                dest.outputStream().use { output -> input.copyTo(output) }
+                partial.outputStream().use { output -> input.copyTo(output) }
             } ?: error("Cannot open $uri")
-            Log.i(TAG, "Model imported: ${dest.name} (${dest.length() / 1_000_000} MB)")
             mutex.withLock { closeEngine() }
+            if (!partial.renameTo(dest)) error("Cannot move $name in place")
+            Log.i(TAG, "Model imported: ${dest.name} (${dest.length() / 1_000_000} MB)")
             refresh()
-            true
+            val missing = model.files.map { it.fileName }.firstOrNull { !File(modelDir, it).exists() }
+            ModelImport.Imported(name, missing)
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to import model", t)
-            lastError = t.message
-            false
+            partial.delete()
+            ModelImport.Failed(t.message ?: t.javaClass.simpleName)
         }
     }
 

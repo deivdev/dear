@@ -62,5 +62,8 @@ object ModelCatalog {
 
     fun byModelFileName(name: String): CatalogModel? = models.firstOrNull { it.model.fileName == name }
 
+    /** The catalog model [name] belongs to, as its weights or its projector. */
+    fun byFileName(name: String): CatalogModel? = models.firstOrNull { m -> m.files.any { it.fileName == name } }
+
     fun isProjector(name: String): Boolean = models.any { it.mmproj?.fileName == name } || name.startsWith("mmproj")
 }

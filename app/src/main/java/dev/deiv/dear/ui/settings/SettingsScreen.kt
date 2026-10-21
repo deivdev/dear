@@ -43,6 +43,7 @@ import dev.deiv.dear.llm.CatalogModel
 import dev.deiv.dear.llm.CatalogStep
 import dev.deiv.dear.llm.DownloadProgress
 import dev.deiv.dear.llm.ModelCatalog
+import dev.deiv.dear.llm.ModelImport
 import dev.deiv.dear.llm.ModelState
 import dev.deiv.dear.llm.ModelStats
 import dev.deiv.dear.ui.common.Dot
@@ -66,6 +67,7 @@ fun SettingsScreen(
     val pending by viewModel.pendingCount.collectAsState()
     val history by viewModel.history.collectAsState()
     val archive by viewModel.archive.collectAsState()
+    val modelImport by viewModel.modelImport.collectAsState()
     var pendingImport by remember { mutableStateOf<Uri?>(null) }
 
     val modelPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -119,6 +121,7 @@ fun SettingsScreen(
                 }
                 InstallPanel(
                     download = download,
+                    modelImport = modelImport,
                     onDownload = viewModel::startDownload,
                     onCancel = viewModel::cancelDownload,
                     onImport = { modelPicker.launch(arrayOf("*/*")) },
@@ -299,6 +302,7 @@ private fun ModelCard(stats: ModelStats, state: ModelState, onDelete: () -> Unit
 @Composable
 private fun InstallPanel(
     download: DownloadProgress,
+    modelImport: ModelImport,
     onDownload: (CatalogModel) -> Unit,
     onCancel: () -> Unit,
     onImport: () -> Unit,
@@ -336,7 +340,30 @@ private fun InstallPanel(
             }
         }
         Spacer(modifier = Modifier.padding(top = 4.dp))
-        PillButton(stringResource(R.string.import_gguf), onClick = onImport, outlined = true)
+        when (modelImport) {
+            ModelImport.Running -> Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                WorkingDots()
+                MonoLabel(stringResource(R.string.importing_gguf))
+            }
+            is ModelImport.Imported -> modelImport.missing?.let {
+                MonoLabel(stringResource(R.string.import_gguf_missing, it))
+            }
+            is ModelImport.Rejected -> MonoLabel(
+                stringResource(R.string.import_gguf_rejected, modelImport.fileName ?: "?"),
+                color = NothingRed,
+            )
+            is ModelImport.Failed -> MonoLabel(stringResource(R.string.import_gguf_failed, modelImport.reason), color = NothingRed)
+            ModelImport.Idle -> Unit
+        }
+        PillButton(
+            stringResource(R.string.import_gguf),
+            onClick = onImport,
+            outlined = true,
+            enabled = modelImport != ModelImport.Running,
+        )
     }
 }
 

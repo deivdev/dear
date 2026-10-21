@@ -39,7 +39,8 @@ The interface is in Italian.
 
 ## Models
 
-Downloaded once from Hugging Face in Settings, or imported from a local GGUF file.
+Downloaded once from Hugging Face in Settings, or imported from local copies of the same files
+(the model and its projector, under their original names).
 
 | Model | Size | RAM | Notes |
 |---|---|---|---|
